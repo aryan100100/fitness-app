@@ -1,0 +1,47 @@
+name: fitness_app
+description: "[HEALTH APP] — Intelligent health companion app."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # --- [HEALTH APP] Core Dependencies ---
+
+  # Supabase: backend, auth, and database
+  supabase_flutter: ^2.8.4
+
+  # Environment variables: loads .env file at runtime
+  flutter_dotenv: ^5.2.1
+
+  # Gemini AI: Google Generative AI for all AI features
+  google_generative_ai: ^0.4.6
+
+  # Google Fonts: Inter typeface for design system
+  google_fonts: ^6.2.1
+
+  # Shimmer: skeleton loading animations
+  shimmer: ^3.0.0
+
+  # Smooth page indicator: dot indicator for onboarding
+  smooth_page_indicator: ^1.2.0+3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # .env is loaded at runtime by flutter_dotenv — NEVER commit real values
+  assets:
+    - .env
