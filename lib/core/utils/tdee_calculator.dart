@@ -17,6 +17,8 @@ class MacroTargets {
   final double sugarG;
   /// True if carbs were clamped to 0 due to extreme calorie constraint.
   final bool carbWarning;
+  /// Final g/kg protein multiplier used (after BF table + preference + clamp).
+  final double proteinMultiplier;
 
   const MacroTargets({
     required this.protein,
@@ -26,6 +28,7 @@ class MacroTargets {
     required this.sodiumMg,
     required this.sugarG,
     this.carbWarning = false,
+    required this.proteinMultiplier,
   });
 }
 
@@ -47,6 +50,7 @@ class NutritionPlan {
   final DateTime? goalEndDate;  // null if goal = maintain
   final bool carbWarning;
   final bool calorieFloorApplied;
+  final double proteinMultiplier; // final g/kg multiplier used
 
   const NutritionPlan({
     required this.bmr,
@@ -65,6 +69,7 @@ class NutritionPlan {
     this.goalEndDate,
     this.carbWarning = false,
     this.calorieFloorApplied = false,
+    this.proteinMultiplier = 1.8,
   });
 }
 
@@ -84,6 +89,25 @@ class TDEECalculator {
     'moderately_active':  1.55,
     'very_active':        1.725,
   };
+
+  // -------------------------------------------------------------------------
+  // Body fat range → Protein multiplier table (g per kg bodyweight)
+  // -------------------------------------------------------------------------
+  static const Map<String, double> _bfProteinMultipliers = {
+    '3-5':   2.4,
+    '6-10':  2.3,
+    '11-13': 2.2,
+    '13-16': 2.1,
+    '16-20': 2.0,
+    '21-25': 1.9,
+    '26-30': 1.8,
+    '31-34': 1.7,
+    '35-39': 1.6,
+    '40+':   1.5,
+  };
+
+  static const double _proteinFloor   = 1.4;
+  static const double _proteinCeiling = 2.7;
 
   // -------------------------------------------------------------------------
   // Body fat range → TDEE modifier table
@@ -220,15 +244,43 @@ class TDEECalculator {
 
   // -------------------------------------------------------------------------
   // Step 5 — Macros from target calories
-  // Priority: protein → fat → carbs (remainder)
+  // Protein: dynamic multiplier from body fat range + preference + floor/ceiling.
+  // Priority: protein → fat → carbs (remainder).
   // Negative carbs fallback: reduce fat to 20%, retry once.
   // -------------------------------------------------------------------------
+
+  /// Returns the final protein multiplier (g/kg) given body fat range and preference.
+  static double resolveProteinMultiplier({
+    required String? bodyFatRange,
+    required String proteinPreference,
+  }) {
+    // Step 1 — Base multiplier from BF range (default 1.8 if skipped)
+    final base = _bfProteinMultipliers[bodyFatRange] ?? 1.8;
+
+    // Step 2 — Preference adjustment
+    final adjustment = switch (proteinPreference) {
+      'high'        => 0.3,
+      'comfortable' => -0.3,
+      _             => 0.0,
+    };
+
+    // Step 3 — Clamp within safe bounds
+    return (base + adjustment).clamp(_proteinFloor, _proteinCeiling);
+  }
+
   static MacroTargets calculateMacros({
     required double targetCalories,
     required double weightKg,
     required String biologicalSex,
+    String? bodyFatRange,
+    String proteinPreference = 'moderate',
   }) {
-    final protein = weightKg * 1.8;
+    final multiplier = resolveProteinMultiplier(
+      bodyFatRange: bodyFatRange,
+      proteinPreference: proteinPreference,
+    );
+
+    final protein = weightKg * multiplier;
     final proteinCal = protein * 4;
 
     double fatPercent = 0.25;
@@ -264,6 +316,7 @@ class TDEECalculator {
       sodiumMg: 2300,
       sugarG: 50,
       carbWarning: carbWarning,
+      proteinMultiplier: multiplier,
     );
   }
 
@@ -318,11 +371,13 @@ class TDEECalculator {
             ? dailyAdjustment
             : 0.0;
 
-    // Step 5 — Macros
+    // Step 5 — Macros (dynamic protein: BF range + preference)
     final macros = calculateMacros(
       targetCalories: targetCalories,
       weightKg: user.weightKg,
       biologicalSex: user.biologicalSex,
+      bodyFatRange: user.bodyFatRange,
+      proteinPreference: user.proteinPreference,
     );
 
     // Step 4d — Goal end date (only for lose/gain with target weight)
@@ -352,6 +407,7 @@ class TDEECalculator {
       goalEndDate: goalEndDate,
       carbWarning: macros.carbWarning,
       calorieFloorApplied: floorApplied,
+      proteinMultiplier: macros.proteinMultiplier,
     );
   }
 }

@@ -224,11 +224,10 @@ void main() {
         targetCalories: 2000,
         weightKg: 70,
         biologicalSex: 'male',
+        // No BF range, moderate preference → 1.8 × 70 = 126g protein
       );
-      // Protein: 70 × 1.8 = 126g → 504 cal
-      // Fat:    2000 × 0.25 / 9 ≈ 55.6g
-      // Carbs:  (2000 - 504 - 500) / 4 = 249 cal / 4 = ~249g
       expect(m.protein, closeTo(126, 1));
+      expect(m.proteinMultiplier, closeTo(1.8, 0.01));
       expect(m.carbWarning, isFalse);
       expect(m.carbs, greaterThan(0));
       expect(m.fiber, equals(38)); // male
@@ -350,6 +349,157 @@ void main() {
       );
       expect(plan.targetCalories, equals(plan.tdee));
       expect(plan.goalEndDate, isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Dynamic Protein Multiplier — resolveProteinMultiplier()
+  // ---------------------------------------------------------------------------
+  group('Dynamic Protein Multiplier', () {
+    // --- Specified example calculations ---
+
+    test('80kg, BF 11-13%, High → 2.2 + 0.3 = 2.5 → 200g protein', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: '11-13',
+        proteinPreference: 'high',
+      );
+      expect(m, closeTo(2.5, 0.001));
+      // 2.5 × 80 = 200g
+      expect((m * 80).roundToDouble(), equals(200));
+    });
+
+    test('90kg, BF 31-34%, Comfortable → 1.7 - 0.3 = 1.4 (floor) → 126g protein', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: '31-34',
+        proteinPreference: 'comfortable',
+      );
+      // 1.7 - 0.3 = 1.4 — exactly at floor
+      expect(m, closeTo(1.4, 0.001));
+      expect((m * 90).roundToDouble(), equals(126));
+    });
+
+    // --- Floor clamp (< 1.4) ---
+    test('35-39% + Comfortable → 1.6 - 0.3 = 1.3 → floored to 1.4', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: '35-39',
+        proteinPreference: 'comfortable',
+      );
+      expect(m, closeTo(1.4, 0.001)); // clamped from 1.3
+    });
+
+    test('40%+ + Comfortable → 1.5 - 0.3 = 1.2 → floored to 1.4', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: '40+',
+        proteinPreference: 'comfortable',
+      );
+      expect(m, closeTo(1.4, 0.001)); // clamped from 1.2
+    });
+
+    // --- Ceiling clamp (> 2.7) ---
+    test('3-5% + High → 2.4 + 0.3 = 2.7 — exactly at ceiling', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: '3-5',
+        proteinPreference: 'high',
+      );
+      expect(m, closeTo(2.7, 0.001)); // exactly ceiling
+    });
+
+    test('6-10% + High → 2.3 + 0.3 = 2.6 — within ceiling', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: '6-10',
+        proteinPreference: 'high',
+      );
+      expect(m, closeTo(2.6, 0.001));
+    });
+
+    // --- Null BF (skipped) ---
+    test('Null BF + Moderate → default 1.8, no change', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: null,
+        proteinPreference: 'moderate',
+      );
+      expect(m, closeTo(1.8, 0.001));
+    });
+
+    test('Null BF + High → 1.8 + 0.3 = 2.1', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: null,
+        proteinPreference: 'high',
+      );
+      expect(m, closeTo(2.1, 0.001));
+    });
+
+    test('Null BF + Comfortable → 1.8 - 0.3 = 1.5', () {
+      final m = TDEECalculator.resolveProteinMultiplier(
+        bodyFatRange: null,
+        proteinPreference: 'comfortable',
+      );
+      expect(m, closeTo(1.5, 0.001));
+    });
+
+    // --- All multipliers within bounds (spot check all 10 BF ranges × 3 prefs) ---
+    const allRanges = [
+      '3-5', '6-10', '11-13', '13-16', '16-20',
+      '21-25', '26-30', '31-34', '35-39', '40+'
+    ];
+    const allPrefs = ['high', 'moderate', 'comfortable'];
+
+    test('All 10 BF ranges × 3 preferences → multiplier always within [1.4, 2.7]', () {
+      for (final bf in allRanges) {
+        for (final pref in allPrefs) {
+          final m = TDEECalculator.resolveProteinMultiplier(
+            bodyFatRange: bf,
+            proteinPreference: pref,
+          );
+          expect(
+            m,
+            inInclusiveRange(1.4, 2.7),
+            reason: 'BF=$bf pref=$pref → multiplier $m out of bounds',
+          );
+        }
+      }
+    });
+
+    // --- calculateMacros exposes proteinMultiplier ---
+    test('calculateMacros returns correct proteinMultiplier field', () {
+      final macros = TDEECalculator.calculateMacros(
+        targetCalories: 2200,
+        weightKg: 80,
+        biologicalSex: 'male',
+        bodyFatRange: '11-13',
+        proteinPreference: 'high',
+      );
+      // 2.2 + 0.3 = 2.5 × 80 = 200g
+      expect(macros.proteinMultiplier, closeTo(2.5, 0.001));
+      expect(macros.protein, closeTo(200, 1));
+    });
+
+    // --- calculateAll integration: protein preference and BF flow through ---
+    test('calculateAll respects proteinPreference: high vs comfortable produce different protein', () {
+      final baseUser = UserModel(
+        name: 'Test', age: 30, biologicalSex: 'male',
+        heightCm: 175, weightKg: 80, targetWeightKg: 70,
+        goal: 'lose', activityLevel: 'moderately_active',
+        lifeSituation: 'office_worker',
+        tdee: 0, targetCalories: 0,
+        proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0,
+        bodyFatRange: '21-25',
+      );
+
+      final planHigh = TDEECalculator.calculateAll(
+        user: baseUser.copyWith(proteinPreference: 'high'),
+        weeklyPacePercent: 0.75,
+      );
+      final planComfy = TDEECalculator.calculateAll(
+        user: baseUser.copyWith(proteinPreference: 'comfortable'),
+        weeklyPacePercent: 0.75,
+      );
+
+      // High preference multiplier (1.9+0.3=2.2) > comfortable (1.9-0.3=1.6)
+      expect(planHigh.proteinG, greaterThan(planComfy.proteinG));
+      // Both plans store a non-zero multiplier
+      expect(planHigh.proteinMultiplier, closeTo(2.2, 0.001));
+      expect(planComfy.proteinMultiplier, closeTo(1.6, 0.001));
     });
   });
 }

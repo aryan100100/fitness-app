@@ -1,5 +1,6 @@
 // [HEALTH APP] — Onboarding Shell Screen
-// Updated for Feature 2: 6 steps, GoalPaceScreen routing.
+// Updated for Feature 1 Update: 8 steps.
+// Step order: Name → Bio → Goal → Activity → Body Fat → Protein Pref → Life Situation → Lifting
 
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -8,9 +9,11 @@ import 'onboarding_controller.dart';
 import 'steps/step1_name.dart';
 import 'steps/step2_bio.dart';
 import 'steps/step3_goal.dart';
-import 'steps/step4_body_fat.dart';
-import 'steps/step5_activity.dart';
-import 'steps/step6_life_situation.dart';
+import 'steps/step4_activity.dart';
+import 'steps/step5_body_fat.dart';
+import 'steps/step6_protein_preference.dart';
+import 'steps/step7_life_situation.dart';
+import 'steps/step8_lifting_experience.dart';
 import 'goal_pace_screen.dart';
 import 'results_screen.dart';
 
@@ -25,7 +28,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   final OnboardingController _controller = OnboardingController();
   int _currentPage = 0;
-  static const int _totalSteps = 6;
+  static const int _totalSteps = 8;
 
   void _nextPage() {
     if (_currentPage < _totalSteps - 1) {
@@ -45,12 +48,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  /// Called after Step 6 (life situation).
-  /// For maintain goal: go straight to results.
-  /// For lose/gain: show the goal pace slider screen first.
+  /// Called after Step 8 (lifting experience).
+  /// For maintain goal: calculate with 0 adjustment and go straight to results.
+  /// For lose/gain: show goal pace slider first.
   void _onOnboardingComplete() {
     if (_controller.goal == 'maintain') {
-      // No pace screen needed — calculate with 0 adjustment and show results.
       _controller.setPacePercent(0);
       _controller.calculateAll();
       _goToResults();
@@ -64,9 +66,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       PageRouteBuilder(
         pageBuilder: (ctx, anim, secondary) =>
             GoalPaceScreen(controller: _controller),
-        transitionsBuilder: (ctx, animation, secondary, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+        transitionsBuilder: (ctx, animation, secondary, child) =>
+            FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 300),
       ),
     );
@@ -77,9 +78,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       PageRouteBuilder(
         pageBuilder: (ctx, anim, secondary) =>
             ResultsScreen(controller: _controller),
-        transitionsBuilder: (ctx, animation, secondary, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+        transitionsBuilder: (ctx, animation, secondary, child) =>
+            FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 300),
       ),
     );
@@ -99,7 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- Top bar: back arrow + progress dots ---
+            // --- Top bar: back arrow + 8 progress dots ---
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
@@ -134,7 +134,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // --- Page content ---
+            // --- 8-step PageView ---
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -143,16 +143,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   // Step 1 — Name
                   Step1Name(controller: _controller, onNext: _nextPage),
-                  // Step 2 — Bio (sex, DOB, height, weight)
+                  // Step 2 — Bio
                   Step2Bio(controller: _controller, onNext: _nextPage),
                   // Step 3 — Goal
                   Step3Goal(controller: _controller, onNext: _nextPage),
-                  // Step 4 — Body fat (optional, new)
-                  Step4BodyFat(controller: _controller, onNext: _nextPage),
-                  // Step 5 — Activity level (was Step 4)
-                  Step5Activity(controller: _controller, onNext: _nextPage),
-                  // Step 6 — Life situation + region (was Step 5)
-                  Step6LifeSituation(
+                  // Step 4 — Activity Level
+                  Step4Activity(controller: _controller, onNext: _nextPage),
+                  // Step 5 — Body Fat Range (optional)
+                  Step5BodyFat(controller: _controller, onNext: _nextPage),
+                  // Step 6 — Protein Preference (pre-selected: moderate)
+                  Step6ProteinPreference(
+                      controller: _controller, onNext: _nextPage),
+                  // Step 7 — Life Situation + Region
+                  Step7LifeSituation(
+                      controller: _controller, onNext: _nextPage),
+                  // Step 8 — Lifting Experience (no default)
+                  Step8LiftingExperience(
                     controller: _controller,
                     onFinish: _onOnboardingComplete,
                   ),

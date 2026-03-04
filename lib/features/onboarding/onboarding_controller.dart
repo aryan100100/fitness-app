@@ -1,6 +1,6 @@
 // [HEALTH APP] — Onboarding Controller (State Management)
-// Single ChangeNotifier holding all user data across 6 onboarding steps.
-// Updated for Feature 2: body fat range + pace slider + NutritionPlan.
+// Single ChangeNotifier holding all user data across 8 onboarding steps.
+// Updated for Feature 1 Update: protein preference + lifting experience.
 
 import 'package:flutter/material.dart';
 import '../../core/utils/tdee_calculator.dart';
@@ -22,16 +22,22 @@ class OnboardingController extends ChangeNotifier {
   String goal = ''; // 'lose' | 'gain' | 'maintain'
   double? targetWeightKg;
 
-  // --- Step 4 (old) → now Step 5 ---
+  // --- Step 4 — Activity Level ---
   String activityLevel = '';
 
-  // --- Step 4 (NEW — body fat) ---
+  // --- Step 5 — Body Fat Range (optional, new in Feature 2) ---
   String? bodyFatRange;   // null = skipped
   bool bodyFatSkipped = false;
 
-  // --- Step 6 (old Step 5) ---
+  // --- Step 6 — Protein Preference (pre-selected: moderate) ---
+  String proteinPreference = 'moderate';
+
+  // --- Step 7 — Life Situation + Region ---
   String lifeSituation = '';
   String region = 'India';
+
+  // --- Step 8 — Lifting Experience (no default, must be chosen) ---
+  String liftingExperience = '';
 
   // --- Pace slider state (set on GoalPaceScreen) ---
   // Default: 0.75% for loss, 0.25% for gain. Set by GoalPaceScreen before calculateAll().
@@ -61,9 +67,11 @@ class OnboardingController extends ChangeNotifier {
   bool get step1Valid => name.trim().isNotEmpty;
   bool get step2Valid => dateOfBirth != null && heightCm > 0 && weightKg > 0;
   bool get step3Valid => goal.isNotEmpty;
-  bool get step4Valid => true; // body fat is always optional
-  bool get step5Valid => activityLevel.isNotEmpty;
-  bool get step6Valid => lifeSituation.isNotEmpty;
+  bool get step4Valid => activityLevel.isNotEmpty;     // Step 4: Activity Level
+  bool get step5Valid => true;                          // Step 5: Body Fat — always optional
+  bool get step6Valid => true;                          // Step 6: Protein Pref — pre-selected
+  bool get step7Valid => lifeSituation.isNotEmpty;     // Step 7: Life Situation
+  bool get step8Valid => liftingExperience.isNotEmpty; // Step 8: Lifting (no default)
 
   // ---------------------------------------------------------------------------
   // Calculate full NutritionPlan using current state.
@@ -108,6 +116,7 @@ class OnboardingController extends ChangeNotifier {
             : null,
         weeklyPacePercent: plan.weeklyPacePercent,
         dailyDeficitSurplus: plan.dailyDeficitSurplus,
+        proteinMultiplier: plan.proteinMultiplier,
       );
       await SupabaseService.instance.createUser(user);
       isSaving = false;
@@ -135,6 +144,7 @@ class OnboardingController extends ChangeNotifier {
     String? goalEndDate,
     double? weeklyPacePercent,
     double? dailyDeficitSurplus,
+    double? proteinMultiplier,
   }) {
     return UserModel(
       name: name.trim(),
@@ -159,28 +169,33 @@ class OnboardingController extends ChangeNotifier {
       bodyFatRange: bodyFatRange,
       weeklyPacePercent: weeklyPacePercent,
       dailyDeficitSurplus: dailyDeficitSurplus,
+      proteinPreference: proteinPreference,
+      liftingExperience: liftingExperience.isEmpty ? null : liftingExperience,
+      proteinMultiplier: proteinMultiplier,
     );
   }
 
   // ---------------------------------------------------------------------------
   // Setters
   // ---------------------------------------------------------------------------
-  void setName(String v)          { name = v; notifyListeners(); }
-  void setSex(String v)           { biologicalSex = v; notifyListeners(); }
-  void setDob(DateTime v)         { dateOfBirth = v; notifyListeners(); }
-  void setHeight(double v)        { heightCm = v; notifyListeners(); }
-  void setWeight(double v)        { weightKg = v; notifyListeners(); }
+  void setName(String v)              { name = v; notifyListeners(); }
+  void setSex(String v)               { biologicalSex = v; notifyListeners(); }
+  void setDob(DateTime v)             { dateOfBirth = v; notifyListeners(); }
+  void setHeight(double v)            { heightCm = v; notifyListeners(); }
+  void setWeight(double v)            { weightKg = v; notifyListeners(); }
   void setGoal(String v) {
     goal = v;
-    weeklyPacePercent = v == 'gain' ? 0.25 : 0.75; // reset default
+    weeklyPacePercent = v == 'gain' ? 0.25 : 0.75;
     if (v == 'maintain') targetWeightKg = null;
     notifyListeners();
   }
-  void setTargetWeight(double v)  { targetWeightKg = v; notifyListeners(); }
-  void setBodyFatRange(String? v) { bodyFatRange = v; bodyFatSkipped = false; notifyListeners(); }
-  void skipBodyFat()              { bodyFatRange = null; bodyFatSkipped = true; notifyListeners(); }
-  void setActivityLevel(String v) { activityLevel = v; notifyListeners(); }
-  void setLifeSituation(String v) { lifeSituation = v; notifyListeners(); }
-  void setRegion(String v)        { region = v; notifyListeners(); }
-  void setPacePercent(double v)   { weeklyPacePercent = v; notifyListeners(); }
+  void setTargetWeight(double v)      { targetWeightKg = v; notifyListeners(); }
+  void setActivityLevel(String v)     { activityLevel = v; notifyListeners(); }
+  void setBodyFatRange(String? v)     { bodyFatRange = v; bodyFatSkipped = false; notifyListeners(); }
+  void skipBodyFat()                  { bodyFatRange = null; bodyFatSkipped = true; notifyListeners(); }
+  void setProteinPreference(String v) { proteinPreference = v; notifyListeners(); }
+  void setLifeSituation(String v)     { lifeSituation = v; notifyListeners(); }
+  void setRegion(String v)            { region = v; notifyListeners(); }
+  void setLiftingExperience(String v) { liftingExperience = v; notifyListeners(); }
+  void setPacePercent(double v)       { weeklyPacePercent = v; notifyListeners(); }
 }

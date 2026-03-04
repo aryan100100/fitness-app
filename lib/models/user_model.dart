@@ -1,6 +1,6 @@
 // [HEALTH APP] — User Model
 // Mirrors the `users` Supabase table exactly.
-// Updated for Feature 2: added bodyFatRange, weeklyPacePercent, dailyDeficitSurplus.
+// Updated for Feature 1 Update: added proteinPreference, liftingExperience, proteinMultiplier.
 
 class UserModel {
   final String? id;
@@ -30,6 +30,11 @@ class UserModel {
   final double? weeklyPacePercent;   // e.g. 0.75 (stored as %, not decimal)
   final double? dailyDeficitSurplus; // negative = deficit, positive = surplus
 
+  // Feature 1 Update additions
+  final String proteinPreference;    // 'high' | 'moderate' | 'comfortable'
+  final String? liftingExperience;   // 'none' | 'beginner' | 'intermediate' | 'advanced'
+  final double? proteinMultiplier;   // final g/kg multiplier used, for reference
+
   const UserModel({
     this.id,
     required this.name,
@@ -55,6 +60,9 @@ class UserModel {
     this.bodyFatRange,
     this.weeklyPacePercent,
     this.dailyDeficitSurplus,
+    this.proteinPreference = 'moderate',
+    this.liftingExperience,
+    this.proteinMultiplier,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -85,6 +93,9 @@ class UserModel {
       bodyFatRange: json['body_fat_range'] as String?,
       weeklyPacePercent: (json['weekly_pace_percent'] as num?)?.toDouble(),
       dailyDeficitSurplus: (json['daily_deficit_surplus'] as num?)?.toDouble(),
+      proteinPreference: json['protein_preference'] as String? ?? 'moderate',
+      liftingExperience: json['lifting_experience'] as String?,
+      proteinMultiplier: (json['protein_multiplier'] as num?)?.toDouble(),
     );
   }
 
@@ -113,6 +124,9 @@ class UserModel {
       if (bodyFatRange != null) 'body_fat_range': bodyFatRange,
       if (weeklyPacePercent != null) 'weekly_pace_percent': weeklyPacePercent,
       if (dailyDeficitSurplus != null) 'daily_deficit_surplus': dailyDeficitSurplus,
+      'protein_preference': proteinPreference,
+      if (liftingExperience != null) 'lifting_experience': liftingExperience,
+      if (proteinMultiplier != null) 'protein_multiplier': proteinMultiplier,
     };
   }
 
@@ -140,6 +154,9 @@ class UserModel {
     String? bodyFatRange,
     double? weeklyPacePercent,
     double? dailyDeficitSurplus,
+    String? proteinPreference,
+    String? liftingExperience,
+    double? proteinMultiplier,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -165,6 +182,9 @@ class UserModel {
       bodyFatRange: bodyFatRange ?? this.bodyFatRange,
       weeklyPacePercent: weeklyPacePercent ?? this.weeklyPacePercent,
       dailyDeficitSurplus: dailyDeficitSurplus ?? this.dailyDeficitSurplus,
+      proteinPreference: proteinPreference ?? this.proteinPreference,
+      liftingExperience: liftingExperience ?? this.liftingExperience,
+      proteinMultiplier: proteinMultiplier ?? this.proteinMultiplier,
     );
   }
 }

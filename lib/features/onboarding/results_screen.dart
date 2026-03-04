@@ -223,6 +223,13 @@ class _ResultsScreenState extends State<ResultsScreen>
                                 color: AppColors.destructive),
                           ),
                         ],
+                        // Protein personalisation note
+                        const SizedBox(height: 10),
+                        Text(
+                          'Protein target adjusted for your body composition and preference.',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.secondaryText),
+                        ),
                       ],
                     ),
                   ),
