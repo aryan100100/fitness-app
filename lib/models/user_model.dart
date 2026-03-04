@@ -1,5 +1,6 @@
 // [HEALTH APP] — User Model
 // Mirrors the `users` Supabase table exactly.
+// Updated for Feature 2: added bodyFatRange, weeklyPacePercent, dailyDeficitSurplus.
 
 class UserModel {
   final String? id;
@@ -24,6 +25,11 @@ class UserModel {
   final List<String> foodPreferences;
   final String? createdAt;
 
+  // Feature 2 additions
+  final String? bodyFatRange;        // e.g. '13-16' | null if skipped
+  final double? weeklyPacePercent;   // e.g. 0.75 (stored as %, not decimal)
+  final double? dailyDeficitSurplus; // negative = deficit, positive = surplus
+
   const UserModel({
     this.id,
     required this.name,
@@ -46,6 +52,9 @@ class UserModel {
     this.goalEndDate,
     this.foodPreferences = const [],
     this.createdAt,
+    this.bodyFatRange,
+    this.weeklyPacePercent,
+    this.dailyDeficitSurplus,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -73,6 +82,9 @@ class UserModel {
           ? List<String>.from(json['food_preferences'] as List)
           : [],
       createdAt: json['created_at'] as String?,
+      bodyFatRange: json['body_fat_range'] as String?,
+      weeklyPacePercent: (json['weekly_pace_percent'] as num?)?.toDouble(),
+      dailyDeficitSurplus: (json['daily_deficit_surplus'] as num?)?.toDouble(),
     );
   }
 
@@ -98,6 +110,9 @@ class UserModel {
       if (goalStartDate != null) 'goal_start_date': goalStartDate,
       if (goalEndDate != null) 'goal_end_date': goalEndDate,
       'food_preferences': foodPreferences,
+      if (bodyFatRange != null) 'body_fat_range': bodyFatRange,
+      if (weeklyPacePercent != null) 'weekly_pace_percent': weeklyPacePercent,
+      if (dailyDeficitSurplus != null) 'daily_deficit_surplus': dailyDeficitSurplus,
     };
   }
 
@@ -122,6 +137,9 @@ class UserModel {
     String? goalStartDate,
     String? goalEndDate,
     List<String>? foodPreferences,
+    String? bodyFatRange,
+    double? weeklyPacePercent,
+    double? dailyDeficitSurplus,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -144,6 +162,9 @@ class UserModel {
       goalStartDate: goalStartDate ?? this.goalStartDate,
       goalEndDate: goalEndDate ?? this.goalEndDate,
       foodPreferences: foodPreferences ?? this.foodPreferences,
+      bodyFatRange: bodyFatRange ?? this.bodyFatRange,
+      weeklyPacePercent: weeklyPacePercent ?? this.weeklyPacePercent,
+      dailyDeficitSurplus: dailyDeficitSurplus ?? this.dailyDeficitSurplus,
     );
   }
 }

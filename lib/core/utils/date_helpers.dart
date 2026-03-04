@@ -24,6 +24,21 @@ class DateHelpers {
   /// Returns today's date as a yyyy-MM-dd string.
   static String todayString() => toDateString(DateTime.now());
 
+  /// Returns a human-readable date string: "14 Aug 2025"
+  static String formatDate(DateTime date) {
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month]} ${date.year}';
+  }
+
+  /// Returns weeks and remaining days from today until [date].
+  static (int weeks, int days) weeksAndDaysUntil(DateTime date) {
+    final totalDays = daysUntil(date).abs();
+    return (totalDays ~/ 7, totalDays % 7);
+  }
+
   /// Returns how many days remain until a target date.
   static int daysUntil(DateTime target) {
     final now = DateTime.now();
