@@ -73,7 +73,58 @@ class Step3Goal extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+
+              // Permanent pregnancy / breastfeeding safety notice
+              // Non-dismissible. Always on screen regardless of goal selected.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.warning,
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: AppColors.warning, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Not suitable during pregnancy or breastfeeding.',
+                            style: TextStyle(
+                              color: AppColors.warning,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Please consult your doctor before using this app if you are pregnant, breastfeeding, or have any medical condition that affects your metabolism.',
+                            style: TextStyle(
+                              color: AppColors.secondaryText,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
               PrimaryButton(
                 label: 'Continue',
                 onTap: controller.step3Valid ? onNext : null,

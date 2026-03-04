@@ -67,7 +67,17 @@ class _Step1NameState extends State<Step1Name>
                 'What should we call you?',
                 style: AppTextStyles.bodySecondary,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 6),
+              Text(
+                'This app is designed for healthy adults. Not for use during pregnancy or breastfeeding.',
+                style: TextStyle(
+                  color: AppColors.secondaryText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 32),
               TextField(
                 controller: _textController,
                 autofocus: true,

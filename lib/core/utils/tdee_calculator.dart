@@ -111,18 +111,19 @@ class TDEECalculator {
 
   // -------------------------------------------------------------------------
   // Body fat range → TDEE modifier table
+  // Modifiers softened per scientific review — self-estimated BF% carries ~3-6% error margin
   // -------------------------------------------------------------------------
   static const Map<String, double> _bodyFatModifiers = {
-    '3-5':   0.05,
-    '6-10':  0.04,
-    '11-13': 0.03,
+    '3-5':   0.03,
+    '6-10':  0.03,
+    '11-13': 0.02,
     '13-16': 0.02,
     '16-20': 0.01,
     '21-25': 0.00,
     '26-30': -0.01,
     '31-34': -0.02,
-    '35-39': -0.03,
-    '40+':   -0.04,
+    '35-39': -0.02,
+    '40+':   -0.03,
   };
 
   // Minimum calorie floors (kcal/day)
@@ -271,6 +272,7 @@ class TDEECalculator {
   static MacroTargets calculateMacros({
     required double targetCalories,
     required double weightKg,
+    required double heightCm,
     required String biologicalSex,
     String? bodyFatRange,
     String proteinPreference = 'moderate',
@@ -280,7 +282,16 @@ class TDEECalculator {
       proteinPreference: proteinPreference,
     );
 
-    final protein = weightKg * multiplier;
+    // Effective weight cap per scientific review — prevents impractical protein
+    // targets in high-BF, high-BMI users.
+    // Applies ONLY to protein gram calculation. All other macros use weightKg.
+    final double heightM = heightCm / 100;
+    final double bmi = weightKg / (heightM * heightM);
+    final bool applyEffectiveCap =
+        (bodyFatRange == '35-39' || bodyFatRange == '40+') && bmi >= 35.0;
+    final double effectiveWeightKg = applyEffectiveCap ? weightKg * 0.80 : weightKg;
+
+    final protein = effectiveWeightKg * multiplier;
     final proteinCal = protein * 4;
 
     double fatPercent = 0.25;
@@ -371,10 +382,11 @@ class TDEECalculator {
             ? dailyAdjustment
             : 0.0;
 
-    // Step 5 — Macros (dynamic protein: BF range + preference)
+    // Step 5 — Macros (dynamic protein: BF range + preference + effective weight cap if applicable)
     final macros = calculateMacros(
       targetCalories: targetCalories,
       weightKg: user.weightKg,
+      heightCm: user.heightCm,
       biologicalSex: user.biologicalSex,
       bodyFatRange: user.bodyFatRange,
       proteinPreference: user.proteinPreference,

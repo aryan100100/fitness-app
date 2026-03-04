@@ -79,9 +79,9 @@ void main() {
   // Body Fat Modifier Tests
   // ---------------------------------------------------------------------------
   group('Body Fat Modifier', () {
-    test('11–13% lean range applies +3% modifier, rounds to nearest 10', () {
-      // 2200 × 1.03 = 2266 → rounds to 2270
-      expect(TDEECalculator.applyBodyFatModifier(2200, '11-13'), equals(2270));
+    test('11–13% lean range applies +2% modifier, rounds to nearest 10', () {
+      // 2200 × 1.02 = 2244 → rounds to 2240
+      expect(TDEECalculator.applyBodyFatModifier(2200, '11-13'), equals(2240));
     });
 
     test('21–25% average range applies 0% modifier, still rounds', () {
@@ -89,9 +89,9 @@ void main() {
       expect(TDEECalculator.applyBodyFatModifier(2200, '21-25'), equals(2200));
     });
 
-    test('40%+ range applies −4% modifier', () {
-      // 2000 × 0.96 = 1920 → already rounded
-      expect(TDEECalculator.applyBodyFatModifier(2000, '40+'), equals(1920));
+    test('40%+ range applies −3% modifier', () {
+      // 2000 × 0.97 = 1940 → already rounded
+      expect(TDEECalculator.applyBodyFatModifier(2000, '40+'), equals(1940));
     });
 
     test('null (skipped) returns TDEE rounded to nearest 10', () {
@@ -223,6 +223,7 @@ void main() {
       final m = TDEECalculator.calculateMacros(
         targetCalories: 2000,
         weightKg: 70,
+        heightCm: 175, // BMI ≈22.9 — no cap
         biologicalSex: 'male',
         // No BF range, moderate preference → 1.8 × 70 = 126g protein
       );
@@ -237,6 +238,7 @@ void main() {
       final m = TDEECalculator.calculateMacros(
         targetCalories: 1800,
         weightKg: 60,
+        heightCm: 165, // BMI ≈22.0 — no cap
         biologicalSex: 'female',
       );
       expect(m.fiber, equals(25));
@@ -246,7 +248,9 @@ void main() {
       // Very low calories, heavy person → protein calories > budget
       final m = TDEECalculator.calculateMacros(
         targetCalories: 1200, // low
-        weightKg: 120,        // protein = 216g = 864 cal (72% of budget)
+        weightKg: 120,
+        heightCm: 175, // BMI ≈39.2 with 35-39 range would trigger cap,
+        // but no bodyFatRange passed here, so no cap applies
         biologicalSex: 'male',
       );
       // Carbs should be 0 or near 0, carbWarning true
@@ -465,6 +469,7 @@ void main() {
       final macros = TDEECalculator.calculateMacros(
         targetCalories: 2200,
         weightKg: 80,
+        heightCm: 175, // BMI ≈26.1 — no cap
         biologicalSex: 'male',
         bodyFatRange: '11-13',
         proteinPreference: 'high',
@@ -500,6 +505,80 @@ void main() {
       // Both plans store a non-zero multiplier
       expect(planHigh.proteinMultiplier, closeTo(2.2, 0.001));
       expect(planComfy.proteinMultiplier, closeTo(1.6, 0.001));
+    });
+
+    // ---------------------------------------------------------------------------
+    // Effective Weight Cap Tests (high-BF + high-BMI)
+    // ---------------------------------------------------------------------------
+
+    // Test 1 — Cap APPLIES: 120 kg, 35-39 BF, height 178 cm (BMI 37.9 ≥ 35)
+    test('Effective weight cap applies — 120kg, 35-39% BF, BMI 37.9 → uses 96kg', () {
+      // effectiveWeight = 120 × 0.80 = 96 kg
+      // multiplier: BF 35-39 base = 1.6, moderate pref (+0) = 1.6
+      // protein = 96 × 1.6 = 153.6 → rounds to 154g
+      // Without cap: 120 × 1.6 = 192g — these must not be equal
+      final macros = TDEECalculator.calculateMacros(
+        targetCalories: 2200,
+        weightKg: 120,
+        heightCm: 178,
+        biologicalSex: 'male',
+        bodyFatRange: '35-39',
+        proteinPreference: 'moderate',
+      );
+      expect(macros.protein, closeTo(154, 1)); // 96 × 1.6, not 120 × 1.6
+      expect(macros.protein, lessThan(170));    // explicit check: cap reduces from 192
+    });
+
+    // Test 2 — Cap APPLIES + ceiling enforced on effective weight:
+    // 115 kg, 40%+ BF, height 179 cm (BMI ≈ 35.9 ≥ 35), High preference
+    test('Cap applies + ceiling enforced on effective weight — 115kg, 40%+, High', () {
+      // effectiveWeight = 115 × 0.80 = 92 kg
+      // multiplier: BF 40+ base = 1.5, high pref (+0.3) = 1.8 → within [1.4, 2.7]
+      // protein = 92 × 1.8 = 165.6 → rounds to 166g
+      // ceiling check: 2.7 × 92 = 248.4 — not triggered here
+      final macros = TDEECalculator.calculateMacros(
+        targetCalories: 2000,
+        weightKg: 115,
+        heightCm: 179,
+        biologicalSex: 'male',
+        bodyFatRange: '40+',
+        proteinPreference: 'high',
+      );
+      expect(macros.protein, closeTo(166, 2)); // 92 × 1.8
+      expect(macros.protein, lessThan(185));    // less than uncapped 115 × 1.8 = 207
+    });
+
+    // Test 3 — NO cap: 100 kg, 35-39 BF, height 186 cm (BMI ≈ 28.9 < 35)
+    test('No cap when BMI < 35 — 100kg, 35-39% BF, height 186cm (BMI 28.9)', () {
+      // BMI = 100 / (1.86^2) ≈ 28.9 — below 35 threshold
+      // multiplier: BF 35-39 base = 1.6, moderate → 1.6
+      // protein = 100 × 1.6 = 160g (full weight used)
+      final macros = TDEECalculator.calculateMacros(
+        targetCalories: 2400,
+        weightKg: 100,
+        heightCm: 186,
+        biologicalSex: 'male',
+        bodyFatRange: '35-39',
+        proteinPreference: 'moderate',
+      );
+      expect(macros.protein, closeTo(160, 1)); // full 100kg used
+    });
+
+    // Test 4 — NO cap: 95 kg, 26-30 BF, height 161 cm (BMI ≈ 36.7 ≥ 35)
+    // High BMI, but BF range not 35-39 or 40+ — cap must NOT apply
+    test('No cap when BF range not 35-39 or 40%+ — 95kg, 26-30% BF, BMI 36.7', () {
+      // BMI = 95 / (1.61^2) ≈ 36.7 — above 35, but BF range 26-30 → no cap
+      // multiplier: BF 26-30 base = 1.8, moderate → 1.8
+      // protein = 95 × 1.8 = 171g (full weight used)
+      final macros = TDEECalculator.calculateMacros(
+        targetCalories: 2300,
+        weightKg: 95,
+        heightCm: 161,
+        biologicalSex: 'male',
+        bodyFatRange: '26-30',
+        proteinPreference: 'moderate',
+      );
+      expect(macros.protein, closeTo(171, 1)); // full 95kg used
     });
   });
 }
