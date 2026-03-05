@@ -33,6 +33,26 @@ dependencies:
   # Smooth page indicator: dot indicator for onboarding
   smooth_page_indicator: ^1.2.0+3
 
+  # --- Feature 3 & 4 Dependencies ---
+
+  # Provider: state management for dashboard and food log
+  provider: ^6.1.2
+
+  # fl_chart: charting library (future chart screens)
+  fl_chart: ^0.69.0
+
+  # http: REST API calls to USDA, Nutritionix, OpenFoodFacts
+  http: ^1.2.2
+
+  # intl: date formatting for dashboard greeting and date display
+  intl: ^0.20.2
+
+  # image_picker: camera and gallery access for photo estimator
+  image_picker: ^1.1.2
+
+  # cached_network_image: cache food images from API responses
+  cached_network_image: ^3.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -42,6 +62,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # .env is loaded at runtime by flutter_dotenv — NEVER commit real values
   assets:
+    # .env is loaded at runtime by flutter_dotenv — NEVER commit real values
     - .env
+    # Local Indian foods database — works fully offline
+    - assets/indian_foods.json

@@ -9,7 +9,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/utils/date_helpers.dart';
 import '../../widgets/primary_button.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../nav_shell.dart';
 import 'onboarding_controller.dart';
 
 class ResultsScreen extends StatefulWidget {
@@ -87,11 +87,12 @@ class _ResultsScreenState extends State<ResultsScreen>
   }
 
   Future<void> _onLetsStart() async {
-    final success = await widget.controller.saveToSupabase();
+    final user = await widget.controller.saveToSupabase();
     if (!mounted) return;
-    if (success) {
+    if (user != null) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (ctx) => const DashboardScreen()),
+        MaterialPageRoute(
+            builder: (ctx) => BottomNavShell(user: user)),
         (route) => false,
       );
     }

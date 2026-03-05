@@ -95,24 +95,26 @@ Respond in pure valid JSON only. No explanation, no markdown, no preamble.
   }
 
   // ---------------------------------------------------------------------------
-  // Feature 5 — Photo Calorie Estimator.
-  // Accepts image bytes and returns estimated nutrition.
+  // Feature 4 — Photo Calorie Estimator (Vision).
+  // Returns PhotoEstimateResult or throws PhotoEstimationException on failure.
   // ---------------------------------------------------------------------------
-  Future<Map<String, dynamic>?> estimateCaloriesFromPhoto({
-    required List<int> imageBytes,
-    required String mimeType, // e.g. 'image/jpeg'
-  }) async {
+  Future<PhotoEstimateResult> estimateMealFromPhoto(
+      List<int> imageBytes, String mimeType) async {
+    const systemPrompt = 'You are a nutrition expert analyzing a photo of food. '
+        'The user cannot measure this meal accurately. Analyze the image carefully '
+        'and provide your best estimate. Consider typical portion sizes and standard '
+        'recipes. Respond ONLY in valid JSON with no explanation, no markdown, no '
+        'code fences. Use exactly this structure: '
+        '{ "foods": ["food item 1", "food item 2"], "totalCalories": number, '
+        '"protein": number, "carbs": number, "fat": number, "fibre": number, '
+        '"confidence": "low" or "medium" or "high", '
+        '"portionNotes": "brief note about portion assumptions", '
+        '"warningMessage": "only include if confidence is low or medium — explain why estimate may be off" }';
+
     try {
-      final prompt = '''
-You are a nutrition expert. The user has taken a photo of their meal because they cannot measure it accurately.
-Analyse the image and estimate: total calories, protein (g), carbohydrates (g), and fat (g).
-Also list the main foods you can identify.
-Respond in pure valid JSON only. No explanation, no markdown, no preamble.
-Format: {"foods": ["..."], "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "confidence": "low|medium|high", "notes": "..."}
-''';
       final content = [
         Content.multi([
-          TextPart(prompt),
+          TextPart(systemPrompt),
           DataPart(mimeType, Uint8List.fromList(imageBytes)),
         ])
       ];
@@ -122,9 +124,10 @@ Format: {"foods": ["..."], "calories": 0, "protein": 0, "carbs": 0, "fat": 0, "c
           .replaceAll(RegExp(r'```json\s*'), '')
           .replaceAll(RegExp(r'```\s*'), '')
           .trim();
-      return jsonDecode(cleaned) as Map<String, dynamic>;
+      final json = jsonDecode(cleaned) as Map<String, dynamic>;
+      return PhotoEstimateResult.fromJson(json);
     } catch (e) {
-      return null;
+      throw PhotoEstimationException('Failed to analyze photo: $e');
     }
   }
 
@@ -164,4 +167,57 @@ Respond with only the plain text message. No JSON, no formatting.
       default:      return '\$';
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Photo Estimate Result model
+// ---------------------------------------------------------------------------
+class PhotoEstimateResult {
+  final List<String> foods;
+  final double totalCalories;
+  final double protein;
+  final double carbs;
+  final double fat;
+  final double fibre;
+  final String confidence; // 'low' | 'medium' | 'high'
+  final String portionNotes;
+  final String? warningMessage;
+
+  PhotoEstimateResult({
+    required this.foods,
+    required this.totalCalories,
+    required this.protein,
+    required this.carbs,
+    required this.fat,
+    required this.fibre,
+    required this.confidence,
+    required this.portionNotes,
+    this.warningMessage,
+  });
+
+  factory PhotoEstimateResult.fromJson(Map<String, dynamic> json) {
+    final rawFoods = json['foods'];
+    List<String> foods = [];
+    if (rawFoods is List) {
+      foods = rawFoods.map((e) => e.toString()).toList();
+    }
+    return PhotoEstimateResult(
+      foods:         foods,
+      totalCalories: (json['totalCalories'] as num?)?.toDouble() ?? 0,
+      protein:       (json['protein']       as num?)?.toDouble() ?? 0,
+      carbs:         (json['carbs']         as num?)?.toDouble() ?? 0,
+      fat:           (json['fat']           as num?)?.toDouble() ?? 0,
+      fibre:         (json['fibre']         as num?)?.toDouble() ?? 0,
+      confidence:    json['confidence']     as String? ?? 'low',
+      portionNotes:  json['portionNotes']   as String? ?? '',
+      warningMessage: json['warningMessage'] as String?,
+    );
+  }
+}
+
+class PhotoEstimationException implements Exception {
+  final String message;
+  PhotoEstimationException(this.message);
+  @override
+  String toString() => message;
 }

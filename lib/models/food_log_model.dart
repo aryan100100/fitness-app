@@ -1,5 +1,6 @@
 // [HEALTH APP] — Food Log Model
 // Mirrors the `food_logs` Supabase table exactly.
+// Updated for Feature 3 & 4: added fibreG, foodSource.
 
 class FoodLogModel {
   final String? id;
@@ -12,7 +13,9 @@ class FoodLogModel {
   final double proteinG;
   final double carbsG;
   final double fatG;
+  final double fibreG;        // NEW — Feature 3 & 4
   final bool isPhotoEstimate;
+  final String foodSource;    // NEW — 'usda'|'nutritionix'|'openfoodfacts'|'indian_local'|'custom'|'photo_estimate'|'manual'
   final String? createdAt;
 
   const FoodLogModel({
@@ -26,7 +29,9 @@ class FoodLogModel {
     required this.proteinG,
     required this.carbsG,
     required this.fatG,
+    this.fibreG = 0,
     this.isPhotoEstimate = false,
+    this.foodSource = 'manual',
     this.createdAt,
   });
 
@@ -42,7 +47,9 @@ class FoodLogModel {
       proteinG: (json['protein_g'] as num?)?.toDouble() ?? 0,
       carbsG: (json['carbs_g'] as num?)?.toDouble() ?? 0,
       fatG: (json['fat_g'] as num?)?.toDouble() ?? 0,
+      fibreG: (json['fibre_g'] as num?)?.toDouble() ?? 0,
       isPhotoEstimate: json['is_photo_estimate'] as bool? ?? false,
+      foodSource: json['food_source'] as String? ?? 'manual',
       createdAt: json['created_at'] as String?,
     );
   }
@@ -59,7 +66,9 @@ class FoodLogModel {
       'protein_g': proteinG,
       'carbs_g': carbsG,
       'fat_g': fatG,
+      'fibre_g': fibreG,
       'is_photo_estimate': isPhotoEstimate,
+      'food_source': foodSource,
     };
   }
 }

@@ -91,11 +91,11 @@ class OnboardingController extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Save the full NutritionPlan to Supabase. Returns true on success.
+  // Save the full NutritionPlan to Supabase. Returns UserModel on success, null on failure.
   // Called by ResultsScreen on "Let's Start →" tap.
   // ---------------------------------------------------------------------------
-  Future<bool> saveToSupabase() async {
-    if (nutritionPlan == null) return false;
+  Future<UserModel?> saveToSupabase() async {
+    if (nutritionPlan == null) return null;
     isSaving = true;
     saveError = null;
     notifyListeners();
@@ -121,12 +121,12 @@ class OnboardingController extends ChangeNotifier {
       await SupabaseService.instance.createUser(user);
       isSaving = false;
       notifyListeners();
-      return true;
+      return user; // Return the model so caller can navigate with it
     } catch (e) {
       isSaving = false;
       saveError = 'Could not save your profile. Please try again.';
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
