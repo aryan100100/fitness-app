@@ -9,7 +9,9 @@ import '../core/constants/app_text_styles.dart';
 import '../models/user_model.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'dashboard/dashboard_provider.dart';
+import 'diet_planner/diet_planner_screen.dart';
 import 'food_log/food_log_screen.dart';
+import 'profile/dev_profile_screen.dart';
 
 class BottomNavShell extends StatefulWidget {
   final UserModel user;
@@ -77,12 +79,12 @@ class _BottomNavShellState extends State<BottomNavShell> {
             DashboardScreen(user: widget.user),
             // Tab 1 — Log (placeholder)
             _PlaceholderTab(label: 'Food Log', icon: '🍽️'),
-            // Tab 2 — AI Plan (placeholder)
-            _PlaceholderTab(label: 'AI Plan', icon: '🤖'),
+            // Tab 2 — AI Plan
+            DietPlannerScreen(user: widget.user),
             // Tab 3 — Workout (placeholder)
             _PlaceholderTab(label: 'Workout', icon: '💪'),
-            // Tab 4 — Profile (placeholder)
-            _PlaceholderTab(label: 'Profile', icon: '👤'),
+            // Tab 4 — Profile
+            const DevProfileScreen(),
           ],
         ),
         bottomNavigationBar: Container(

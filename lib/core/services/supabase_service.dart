@@ -15,9 +15,27 @@ class SupabaseService {
   // Users
   // ---------------------------------------------------------------------------
 
-  /// Insert a new user row after onboarding completion.
-  Future<void> createUser(UserModel user) async {
-    await _client.from('users').insert(user.toJson());
+  /// Upsert a user row after onboarding completion.
+  /// Uses onConflict: 'id' so re-running onboarding never fails on a duplicate PK.
+  Future<void> upsertUser(UserModel user) async {
+    await _client.from('users').upsert(
+      user.toJson(),
+      onConflict: 'id',
+    );
+  }
+
+  /// Verify a user row exists after insert — confirms RLS and schema are working.
+  Future<bool> verifyUserExists(String userId) async {
+    try {
+      final data = await _client
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle();
+      return data != null;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Fetch the current user's profile from Supabase.

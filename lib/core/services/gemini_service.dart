@@ -4,8 +4,12 @@
 
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import '../../models/meal_plan_result.dart';
+import '../../models/recipe_result.dart';
+import '../../models/user_model.dart';
 
 class GeminiService {
   GeminiService._();
@@ -41,57 +45,104 @@ class GeminiService {
   }
 
   // ---------------------------------------------------------------------------
-  // Feature 6 — Diet Planner: Generate a full-day meal plan.
-  // Returns parsed JSON or null on failure.
+  // Feature 5 — Diet Planner: Generate a full-day meal plan.
+  // Full spec prompt: all 5 macros, goal, pantry foods, life-situation rules.
   // ---------------------------------------------------------------------------
-  Future<Map<String, dynamic>?> generateMealPlan({
-    required String lifeSituation,
-    required String region,
-    required int targetCalories,
-    required double proteinG,
-    required double carbsG,
-    required double fatG,
-    List<String> foodPreferences = const [],
-  }) async {
-    final prefs = foodPreferences.isNotEmpty
-        ? 'Food preferences / restrictions: ${foodPreferences.join(', ')}.'
-        : '';
-    final currency = _currencyFor(region);
-    final prompt = '''
-Generate a full day meal plan for a $lifeSituation in $region.
-Daily budget: approximately $currency 150.
-Calorie target: $targetCalories kcal.
-Protein: ${proteinG.toStringAsFixed(0)}g, Carbs: ${carbsG.toStringAsFixed(0)}g, Fat: ${fatG.toStringAsFixed(0)}g.
-$prefs
-Provide 4 meals: breakfast, lunch, dinner, snack.
-For each meal include: meal_name, time_suggestion, foods (array of {name, quantity_description}), calories, protein_g, carbs_g, fat_g.
-Prioritise high-protein, affordable, locally available foods in $region.
-Respond in pure valid JSON only. No explanation, no markdown, no preamble.
-Format: {"meals": [ { "meal_type": "breakfast", "meal_name": "...", "time_suggestion": "...", "foods": [...], "calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0 } ]}
-''';
-    return _sendJsonPrompt(prompt);
+  Future<MealPlanResult?> generateMealPlan(
+    UserModel user,
+    List<String> availableFoods,
+  ) async {
+    final today = _todayString();
+    final foodsLine = availableFoods.isNotEmpty
+        ? availableFoods.join(', ')
+        : 'No specific foods — use best judgement for their situation';
+    final prefsLine = user.foodPreferences.isNotEmpty
+        ? user.foodPreferences.join(', ')
+        : 'None specified';
+    final goalLabel = user.goal == 'lose'
+        ? 'losing weight'
+        : user.goal == 'gain'
+            ? 'gaining weight'
+            : 'maintaining weight';
+
+    final prompt = 'You are an expert nutritionist and meal planner. '
+        'Generate a complete one-day meal plan for a real person with this profile:\n'
+        '- Life situation: ${user.lifeSituation}\n'
+        '- Region: ${user.region}\n'
+        '- Daily calorie target: ${user.targetCalories.toInt()} kcal\n'
+        '- Protein target: ${user.proteinG.toInt()}g\n'
+        '- Carbohydrates target: ${user.carbsG.toInt()}g\n'
+        '- Fat target: ${user.fatG.toInt()}g\n'
+        '- Fibre target: ${user.fiberG.toInt()}g\n'
+        '- Goal: $goalLabel\n'
+        '- Available foods today: $foodsLine\n'
+        '- Food preferences: $prefsLine\n\n'
+        'Rules:\n'
+        '- Build the plan primarily around available foods if listed. Small additions (spices, condiments) are OK.\n'
+        '- For hostel_student: no-cook or minimal prep (hot water/microwave). Student budget.\n'
+        '- For office_worker: packable, quick-prep, or nearby options.\n'
+        '- For work_from_home or homemaker: home-cooked meals with full recipes.\n'
+        '- Hit calorie and protein targets within 5%.\n'
+        '- Exactly 4 meals: breakfast, lunch, dinner, snack.\n'
+        '- Respond ONLY in valid JSON, no markdown, no code fences:\n'
+        '{"planDate":"$today","totalCalories":0,"totalProtein":0,"totalCarbs":0,"totalFat":0,"totalFibre":0,'
+        '"meals":[{"mealType":"breakfast","mealName":"string","items":[{"name":"string","quantity":"string",'
+        '"calories":0,"protein":0,"carbs":0,"fat":0,"fibre":0}],'
+        '"totalCalories":0,"totalProtein":0,"totalCarbs":0,"totalFat":0,"totalFibre":0,"prepNote":"string"}]}';
+
+    try {
+      final raw = await _sendJsonPrompt(prompt);
+      if (raw == null) return null;
+      return MealPlanResult.fromJson(raw);
+    } catch (e) {
+      debugPrint('[GEMINI] generateMealPlan parse error: $e');
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // Feature 6 — Recipe Generator.
+  // Feature 5 — Recipe Generator with optional macro-fit toggle.
   // ---------------------------------------------------------------------------
-  Future<Map<String, dynamic>?> generateRecipe({
-    required String dishOrIngredient,
-    required String region,
-    List<String> foodPreferences = const [],
+  Future<RecipeResult?> generateRecipeResult({
+    required String query,
+    required UserModel user,
+    bool fitMacros = false,
+    double? remCalories,
+    double? remProtein,
+    double? remCarbs,
+    double? remFat,
   }) async {
-    final prefs = foodPreferences.isNotEmpty
-        ? 'Food preferences / restrictions: ${foodPreferences.join(', ')}.'
+    final macroLine = fitMacros && remCalories != null
+        ? 'Adjust recipe quantities to fit remaining macros: '
+            '${remCalories.toInt()} kcal, ${remProtein!.toInt()}g protein, '
+            '${remCarbs!.toInt()}g carbs, ${remFat!.toInt()}g fat. '
         : '';
-    final prompt = '''
-Generate a detailed recipe for "$dishOrIngredient" suitable for a user in $region.
-$prefs
-Include: recipe_name, servings, prep_time_minutes, cook_time_minutes,
-ingredients (array of {name, quantity}), steps (array of strings),
-nutrition_per_serving: { calories, protein_g, carbs_g, fat_g }.
-Respond in pure valid JSON only. No explanation, no markdown, no preamble.
-''';
-    return _sendJsonPrompt(prompt);
+
+    final prompt = 'Generate a detailed recipe for: $query. '
+        'User: region ${user.region}, life situation ${user.lifeSituation}. '
+        '$macroLine'
+        'Respond ONLY in valid JSON, no markdown, no code fences: '
+        '{"recipeName":"string","servings":1,"prepTimeMinutes":0,"cookTimeMinutes":0,'
+        '"ingredients":[{"name":"string","quantity":"string","gramsEquivalent":0}],'
+        '"instructions":["string"],'
+        '"nutritionPerServing":{"calories":0,"protein":0,"carbs":0,"fat":0,"fibre":0},'
+        '"macroNote":"string"}';
+
+    try {
+      final raw = await _sendJsonPrompt(prompt);
+      if (raw == null) return null;
+      return RecipeResult.fromJson(raw);
+    } catch (e) {
+      debugPrint('[GEMINI] generateRecipeResult parse error: $e');
+      return null;
+    }
+  }
+
+  String _todayString() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
   }
 
   // ---------------------------------------------------------------------------
@@ -156,17 +207,6 @@ Respond with only the plain text message. No JSON, no formatting.
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Helper: currency symbol by region.
-  // ---------------------------------------------------------------------------
-  String _currencyFor(String region) {
-    switch (region) {
-      case 'India': return '₹';
-      case 'USA':   return '\$';
-      case 'UK':    return '£';
-      default:      return '\$';
-    }
-  }
 }
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,10 @@
 // [HEALTH APP] — Onboarding Controller (State Management)
 // Single ChangeNotifier holding all user data across 8 onboarding steps.
 // Updated for Feature 1 Update: protein preference + lifting experience.
+// Updated for Bug Fix: anonymous auth + RLS-safe insert.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/utils/date_helpers.dart';
 import '../../core/services/supabase_service.dart';
@@ -79,7 +81,9 @@ class OnboardingController extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   void calculateAll() {
     // Build a temporary UserModel from current controller state.
+    // id is empty string — this model is only used for TDEE math, never saved.
     final user = _buildUserModel(
+      id: '',
       tdee: 0, targetCalories: 0,
       proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0,
     );
@@ -93,6 +97,10 @@ class OnboardingController extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Save the full NutritionPlan to Supabase. Returns UserModel on success, null on failure.
   // Called by ResultsScreen on "Let's Start →" tap.
+  //
+  // Auth strategy: anonymous sign-in via Supabase.
+  // This gives the user a real auth.uid() immediately, satisfying the RLS
+  // INSERT policy which requires: id = auth.uid().
   // ---------------------------------------------------------------------------
   Future<UserModel?> saveToSupabase() async {
     if (nutritionPlan == null) return null;
@@ -101,9 +109,32 @@ class OnboardingController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // -----------------------------------------------------------------------
+      // Step 1 — Ensure the user is authenticated.
+      // REQUIRED: Anonymous auth must be enabled in Supabase Dashboard:
+      //   Authentication → Providers → Anonymous → Enable
+      // -----------------------------------------------------------------------
+      final client = Supabase.instance.client;
+      var currentUser = client.auth.currentUser;
+
+      if (currentUser == null) {
+        debugPrint('[AUTH] No active session — signing in anonymously...');
+        currentUser = await _signInWithRetry(client);
+        debugPrint('[AUTH] Anonymous sign-in success. UID: ${currentUser.id}');
+      } else {
+        debugPrint('[AUTH] Reusing existing session. UID: ${currentUser.id}');
+      }
+
+      final uid = currentUser.id;
+
+      // -----------------------------------------------------------------------
+      // Step 2 — Build the user model with the auth UID as the users.id.
+      // This is CRITICAL: the RLS policy requires id = auth.uid().
+      // -----------------------------------------------------------------------
       final plan = nutritionPlan!;
       final today = DateHelpers.todayString();
       final user = _buildUserModel(
+        id: uid,
         tdee: plan.tdee,
         targetCalories: plan.targetCalories,
         proteinG: plan.proteinG,
@@ -118,15 +149,90 @@ class OnboardingController extends ChangeNotifier {
         dailyDeficitSurplus: plan.dailyDeficitSurplus,
         proteinMultiplier: plan.proteinMultiplier,
       );
-      await SupabaseService.instance.createUser(user);
+
+      // Debug: print what we're inserting
+      if (kDebugMode) {
+        debugPrint('[UPSERT] Sending to users table:');
+        user.toJson().forEach((k, v) => debugPrint('  $k: $v'));
+      }
+
+      // -----------------------------------------------------------------------
+      // Step 3 — Upsert (not insert). Safe on re-run: updates existing row.
+      // -----------------------------------------------------------------------
+      await SupabaseService.instance.upsertUser(user);
+
+      // -----------------------------------------------------------------------
+      // Step 4 — Verify the row actually exists in Supabase.
+      // -----------------------------------------------------------------------
+      final verified = await SupabaseService.instance.verifyUserExists(uid);
+      if (!verified) {
+        throw Exception('Row verification failed — upsert appeared to succeed '
+            'but the row could not be read back. Check RLS SELECT policy.');
+      }
+
+      debugPrint('[UPSERT] User row verified in Supabase. UID: $uid');
       isSaving = false;
       notifyListeners();
-      return user; // Return the model so caller can navigate with it
-    } catch (e) {
+      return user;
+
+    } on AuthException catch (e) {
+      // Auth-specific error — most likely Anonymous Auth is disabled
+      debugPrint('[AUTH ERROR] statusCode: ${e.statusCode}');
+      debugPrint('[AUTH ERROR] message: ${e.message}');
+      if (kDebugMode && (e.message.contains('disabled') || e.message.contains('Anonymous'))) {
+        debugPrint('\n>>> FIX REQUIRED <<<');
+        debugPrint('Anonymous Auth is disabled in your Supabase project.');
+        debugPrint('Go to: Dashboard → Authentication → Providers → Anonymous → Enable');
+        debugPrint('<<<>>>\n');
+      }
       isSaving = false;
-      saveError = 'Could not save your profile. Please try again.';
+      saveError = kDebugMode
+          ? 'Auth error [${e.statusCode}]: ${e.message}'
+          : 'Could not save your profile. Please try again.';
       notifyListeners();
       return null;
+
+    } on PostgrestException catch (e) {
+      // Supabase DB error: gives us code, message, details, hint
+      final msg = 'Supabase error [${e.code}]: ${e.message}\n'
+          'Details: ${e.details}\nHint: ${e.hint}';
+      debugPrint('[ERROR] $msg');
+      isSaving = false;
+      saveError = kDebugMode
+          ? msg
+          : 'Could not save your profile. Please try again.';
+      notifyListeners();
+      return null;
+
+    } catch (e, stack) {
+      debugPrint('[ERROR] saveToSupabase unexpected error: $e');
+      debugPrint('[ERROR] Stack: $stack');
+      isSaving = false;
+      saveError = kDebugMode
+          ? e.toString()
+          : 'Could not save your profile. Please try again.';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helper — anonymous sign-in with one retry after 2 seconds.
+  // Separating this keeps saveToSupabase() readable.
+  // ---------------------------------------------------------------------------
+  Future<User> _signInWithRetry(SupabaseClient client) async {
+    try {
+      final response = await client.auth.signInAnonymously();
+      final user = response.user;
+      if (user == null) throw AuthException('signInAnonymously returned null user');
+      return user;
+    } on AuthException catch (e) {
+      debugPrint('[AUTH] First attempt failed: ${e.message}. Retrying in 2s...');
+      await Future.delayed(const Duration(seconds: 2));
+      final response = await client.auth.signInAnonymously();
+      final user = response.user;
+      if (user == null) throw AuthException('signInAnonymously returned null user after retry');
+      return user;
     }
   }
 
@@ -134,6 +240,7 @@ class OnboardingController extends ChangeNotifier {
   // Private helper — builds a UserModel from current controller state.
   // ---------------------------------------------------------------------------
   UserModel _buildUserModel({
+    required String id,
     required double tdee,
     required double targetCalories,
     required double proteinG,
@@ -147,6 +254,7 @@ class OnboardingController extends ChangeNotifier {
     double? proteinMultiplier,
   }) {
     return UserModel(
+      id: id,
       name: name.trim(),
       age: age,
       biologicalSex: biologicalSex,

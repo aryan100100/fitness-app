@@ -3,6 +3,7 @@
 // All numbers animate counting up from 0 over 1.2s on entry.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -95,8 +96,23 @@ class _ResultsScreenState extends State<ResultsScreen>
             builder: (ctx) => BottomNavShell(user: user)),
         (route) => false,
       );
+    } else {
+      // Show actual error in debug mode so it's visible without Xcode
+      final msg = kDebugMode
+          ? (widget.controller.saveError ?? 'Unknown error — check debugPrint output')
+          : 'Could not save your profile. Please check your connection and try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg,
+              style: const TextStyle(fontSize: 13, color: Colors.white)),
+          backgroundColor: const Color(0xFFB00020),
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../../models/dashboard_summary.dart';
 import '../../models/food_log_model.dart';
 import '../../models/user_model.dart';
-import '../services/dashboard_service.dart';
+import '../../core/services/dashboard_service.dart';
 
 class DashboardProvider extends ChangeNotifier {
   final DashboardService _service = DashboardService.instance;

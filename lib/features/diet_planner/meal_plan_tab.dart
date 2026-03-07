@@ -1,0 +1,429 @@
+// [HEALTH APP] — Meal Plan Tab
+// AI meal plan generation. State machine: idle → loading → loaded → error.
+// On init: checks Supabase for today's cached plan first (instant load).
+// Generates via Gemini only when user explicitly taps the button.
+
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/services/diet_planner_service.dart';
+import '../../../core/services/gemini_service.dart';
+import '../../../core/services/pantry_service.dart';
+import '../../../models/meal_plan_result.dart';
+import '../../../models/user_model.dart';
+import 'food_input_sheet.dart';
+import 'pantry_manager_screen.dart';
+import 'widgets/daily_summary_card.dart';
+import 'widgets/meal_plan_card.dart';
+import 'widgets/pantry_chip_row.dart';
+
+enum _PlanState { idle, loading, loaded, error }
+
+class MealPlanTab extends StatefulWidget {
+  final UserModel user;
+  const MealPlanTab({super.key, required this.user});
+
+  @override
+  State<MealPlanTab> createState() => _MealPlanTabState();
+}
+
+class _MealPlanTabState extends State<MealPlanTab>
+    with AutomaticKeepAliveClientMixin {
+  _PlanState _state = _PlanState.idle;
+  MealPlanResult? _plan;
+  List<String> _todayFoods = [];  // today's pantry (can differ from saved)
+  bool _slowThinking = false;
+  Timer? _slowTimer;
+
+  String get _userId =>
+      Supabase.instance.client.auth.currentUser?.id ?? '';
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  @override
+  void dispose() {
+    _slowTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _init() async {
+    // Load saved pantry as today's starting list
+    final pantry = await PantryService.instance.loadPantry(_userId);
+    if (!mounted) return;
+    setState(() => _todayFoods = List.from(pantry));
+
+    // Check for a cached plan for today
+    final cached = await DietPlannerService.instance.loadTodaysPlan(_userId);
+    if (!mounted) return;
+    if (cached != null) {
+      setState(() { _state = _PlanState.loaded; _plan = cached; });
+    }
+  }
+
+  Future<void> _generate() async {
+    setState(() {
+      _state = _PlanState.loading;
+      _slowThinking = false;
+    });
+
+    _slowTimer?.cancel();
+    _slowTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted && _state == _PlanState.loading) {
+        setState(() => _slowThinking = true);
+      }
+    });
+
+    try {
+      final result = await GeminiService.instance
+          .generateMealPlan(widget.user, _todayFoods);
+
+      _slowTimer?.cancel();
+      if (!mounted) return;
+
+      if (result != null) {
+        // Save to Supabase
+        await DietPlannerService.instance.savePlan(_userId, result);
+        if (!mounted) return;
+        setState(() { _state = _PlanState.loaded; _plan = result; });
+      } else {
+        setState(() => _state = _PlanState.error);
+      }
+    } catch (_) {
+      _slowTimer?.cancel();
+      if (mounted) setState(() => _state = _PlanState.error);
+    }
+  }
+
+  Future<void> _regenerate() async {
+    // Confirm before overwriting
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Regenerate Plan?',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Text(
+          'This will replace your current plan. Any meals already logged will stay in your diary.',
+          style: TextStyle(color: Colors.white54, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: Colors.white38)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Regenerate',
+                style: TextStyle(color: AppColors.primaryAccent)),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) _generate();
+  }
+
+  void _openInfoSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('How your plan is generated',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            const Text(
+              'Your meal plan is generated by Gemini AI based on your calorie '
+              'targets, life situation, available foods, and region. Values are '
+              'estimates — log meals to track accurately.',
+              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Got it'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openAddFoodSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => FoodInputSheet(
+        initialSelected: List.from(_todayFoods),
+        onDone: (updated) => setState(() => _todayFoods = updated),
+      ),
+    );
+  }
+
+  void _openPantryManager() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PantryManagerScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return RefreshIndicator(
+      color: AppColors.primaryAccent,
+      backgroundColor: const Color(0xFF1A1A1A),
+      onRefresh: _init,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Today's Meal Plan",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800)),
+                    Text(
+                      _dateLabel(),
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 13),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.info_outline_rounded,
+                      color: Colors.white38, size: 22),
+                  onPressed: _openInfoSheet,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Pantry section
+            const Text("What do you have today?",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            if (_todayFoods.isEmpty)
+              const Text(
+                "No foods added yet — tap + Add or generate a plan for your life situation",
+                style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic),
+              )
+            else
+              PantryChipRow(
+                foods: _todayFoods,
+                onRemove: (f) => setState(() => _todayFoods.remove(f)),
+                onAdd: _openAddFoodSheet,
+              ),
+            if (_todayFoods.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: GestureDetector(
+                  onTap: _openAddFoodSheet,
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_circle_outline,
+                          color: AppColors.primaryAccent, size: 16),
+                      const SizedBox(width: 6),
+                      Text('Add foods',
+                          style: TextStyle(
+                              color: AppColors.primaryAccent, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: _openPantryManager,
+              child: const Text('Edit your saved pantry →',
+                  style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.white38)),
+            ),
+            const SizedBox(height: 24),
+            // State machine body
+            _buildBody(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_state) {
+      case _PlanState.idle:
+        return _buildGenerateButton();
+
+      case _PlanState.loading:
+        return _buildShimmer();
+
+      case _PlanState.loaded:
+        return _buildPlanCards();
+
+      case _PlanState.error:
+        return _buildError();
+    }
+  }
+
+  Widget _buildGenerateButton() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _generate,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryAccent,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Text('✨ Generate My Meal Plan',
+                style: TextStyle(
+                    fontWeight: FontWeight.w800, fontSize: 16)),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Center(
+          child: Text('Powered by Gemini AI — generates in 5–10 seconds',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmer() {
+    return Column(
+      children: [
+        // Pseudo-shimmer ghost cards
+        ...List.generate(3, (i) => _ghostCard()),
+        const SizedBox(height: 16),
+        Text(
+          _slowThinking
+              ? 'Still thinking... complex meals take a moment ☕'
+              : 'Generating your personalised plan...',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white54, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        const CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor:
+              AlwaysStoppedAnimation<Color>(AppColors.primaryAccent),
+        ),
+      ],
+    );
+  }
+
+  Widget _ghostCard() => Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        height: 100,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+      );
+
+  Widget _buildPlanCards() {
+    final plan = _plan!;
+    return Column(
+      children: [
+        ...plan.meals.map((m) => MealPlanCard(meal: m)),
+        const SizedBox(height: 8),
+        DailySummaryCard(plan: plan, user: widget.user),
+        const SizedBox(height: 16),
+        // Regenerate
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _regenerate,
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.white24),
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Text('🔄',
+                style: TextStyle(fontSize: 14)),
+            label: const Text('Regenerate Plan',
+                style: TextStyle(
+                    color: Colors.white54, fontWeight: FontWeight.w600)),
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Column(
+        children: [
+          const SizedBox(height: 30),
+          const Icon(Icons.wifi_tethering_error_rounded,
+              color: Colors.white24, size: 48),
+          const SizedBox(height: 12),
+          const Text(
+            'Generation failed — tap to retry',
+            style: TextStyle(color: Colors.white38, fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: _generate,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: AppColors.primaryAccent),
+            ),
+            child: Text('Try Again',
+                style: TextStyle(color: AppColors.primaryAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _dateLabel() {
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final n = DateTime.now();
+    return '${n.day} ${months[n.month]} ${n.year}';
+  }
+}
