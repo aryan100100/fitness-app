@@ -22,7 +22,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
 
   # Gemini AI: Google Generative AI for all AI features
-  google_generative_ai: ^0.4.6
+  google_generative_ai: 0.4.6
 
   # Google Fonts: Inter typeface for design system
   google_fonts: ^6.2.1

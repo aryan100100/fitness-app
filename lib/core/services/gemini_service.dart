@@ -1,52 +1,168 @@
 // [HEALTH APP] — Gemini AI Service
-// Single entry point for ALL Gemini 1.5 Flash calls.
-// Every method is async, try/catch wrapped, and returns structured data.
+// Uses direct HTTP calls to the Gemini v1 REST API.
+// The google_generative_ai Flutter package hardcodes a v1beta endpoint
+// internally which does not support flash models — bypassed permanently here.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 import '../../models/meal_plan_result.dart';
 import '../../models/recipe_result.dart';
 import '../../models/user_model.dart';
 
+// ---------------------------------------------------------------------------
+// Custom exception
+// ---------------------------------------------------------------------------
+class GeminiException implements Exception {
+  final String message;
+  GeminiException(this.message);
+  @override
+  String toString() => 'GeminiException: $message';
+}
+
+// ---------------------------------------------------------------------------
+// GeminiService — singleton
+// ---------------------------------------------------------------------------
 class GeminiService {
   GeminiService._();
   static final GeminiService instance = GeminiService._();
 
-  GenerativeModel? _model;
+  // ── v1 REST endpoint — gemini-2.5-flash confirmed working on this API key ──
+  static const String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent';
 
-  GenerativeModel get _gemini {
-    _model ??= GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: dotenv.env['GEMINI_API_KEY'] ?? '',
-    );
-    return _model!;
+  String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+
+  // ---------------------------------------------------------------------------
+  // Internal: strip markdown fences from response text (safety fallback).
+  // ---------------------------------------------------------------------------
+  String _cleanJson(String raw) {
+    String s = raw.trim();
+    if (s.startsWith('```json') || s.startsWith('```JSON')) {
+      s = s.substring(7);
+    } else if (s.startsWith('```')) {
+      s = s.substring(3);
+    }
+    if (s.endsWith('```')) {
+      s = s.substring(0, s.length - 3);
+    }
+    return s.trim();
   }
 
   // ---------------------------------------------------------------------------
-  // Internal helper: sends a text prompt, parses JSON response.
+  // Core HTTP helper — sends a text prompt, returns parsed JSON.
+  // Verbose diagnostic logging. Never silently swallows errors.
   // ---------------------------------------------------------------------------
-  Future<Map<String, dynamic>?> _sendJsonPrompt(String prompt) async {
+  Future<Map<String, dynamic>> _sendJsonPrompt(String prompt) async {
+    final apiKey = _apiKey;
+
+    if (kDebugMode) {
+      debugPrint('[GEMINI] === REQUEST START ===');
+      debugPrint('[GEMINI] URL: $_baseUrl');
+      if (apiKey.isEmpty) {
+        debugPrint('[GEMINI] ⚠️  Key is EMPTY — add GEMINI_API_KEY to .env');
+      } else {
+        debugPrint(
+            '[GEMINI] Key prefix: ${apiKey.substring(0, apiKey.length >= 8 ? 8 : apiKey.length)}...'
+            ' (${apiKey.length} chars total)');
+      }
+      debugPrint('[GEMINI] Prompt length: ${prompt.length} chars');
+    }
+
+    final uri = Uri.parse('$_baseUrl?key=$apiKey');
+
+    final requestBody = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {'text': prompt}
+          ]
+        }
+      ],
+      'generationConfig': {
+        'temperature': 0.7,
+        'maxOutputTokens': 8192,
+      }
+    });
+
     try {
-      final content = [Content.text(prompt)];
-      final response = await _gemini.generateContent(content);
-      final text = response.text ?? '';
-      // Strip any accidental markdown fences
-      final cleaned = text
-          .replaceAll(RegExp(r'```json\s*'), '')
-          .replaceAll(RegExp(r'```\s*'), '')
-          .trim();
-      return jsonDecode(cleaned) as Map<String, dynamic>;
-    } catch (e) {
-      return null;
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      debugPrint('[GEMINI] HTTP status: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        debugPrint('[GEMINI] ❌ HTTP error body: ${response.body}');
+        throw GeminiException('HTTP ${response.statusCode}: ${response.body}');
+      }
+
+      final responseJson =
+          jsonDecode(response.body) as Map<String, dynamic>;
+
+      final text = (responseJson['candidates'] as List?)
+          ?.firstOrNull?['content']?['parts']?[0]?['text'] as String?;
+
+      if (text == null || text.isEmpty) {
+        debugPrint('[GEMINI] ❌ No text in response: ${response.body}');
+        throw GeminiException('No content in Gemini response');
+      }
+
+      debugPrint(
+          '[GEMINI] Raw response (first 300 chars): '
+          '${text.substring(0, text.length.clamp(0, 300))}');
+
+      // ── Step 1: clean fences then direct parse ──────────────────────────
+      final cleaned = _cleanJson(text);
+      try {
+        final parsed = jsonDecode(cleaned) as Map<String, dynamic>;
+        if (parsed.containsKey('error')) {
+          debugPrint('[GEMINI] API returned error object: ${parsed['error']}');
+          throw GeminiException('Gemini error: ${parsed['error']}');
+        }
+        debugPrint('[GEMINI] ✅ JSON parsed OK');
+        return parsed;
+      } catch (parseErr) {
+        if (parseErr is GeminiException) rethrow;
+        debugPrint('[GEMINI] Direct parse failed: $parseErr');
+      }
+
+      // ── Step 2: regex fallback ──────────────────────────────────────────
+      final match = RegExp(r'\{[\s\S]*\}', multiLine: true).firstMatch(text);
+      if (match != null) {
+        debugPrint('[GEMINI] Trying regex fallback…');
+        try {
+          final parsed = jsonDecode(match.group(0)!) as Map<String, dynamic>;
+          debugPrint('[GEMINI] ✅ Fallback parse OK');
+          return parsed;
+        } catch (_) {
+          debugPrint('[GEMINI] Fallback parse also failed');
+        }
+      }
+
+      throw GeminiException('All JSON parse attempts exhausted. Raw: $text');
+
+    } on TimeoutException {
+      debugPrint('[GEMINI] ❌ Timed out after 30 seconds');
+      throw GeminiException('Request timed out — check your internet connection');
+    } catch (e, stack) {
+      if (e is GeminiException) rethrow;
+      debugPrint('[GEMINI] ❌ Exception: ${e.runtimeType}');
+      debugPrint('[GEMINI] Message: $e');
+      if (kDebugMode) debugPrint('[GEMINI] Stack:\n$stack');
+      throw GeminiException(e.toString());
     }
   }
 
   // ---------------------------------------------------------------------------
   // Feature 5 — Diet Planner: Generate a full-day meal plan.
-  // Full spec prompt: all 5 macros, goal, pantry foods, life-situation rules.
   // ---------------------------------------------------------------------------
   Future<MealPlanResult?> generateMealPlan(
     UserModel user,
@@ -60,42 +176,41 @@ class GeminiService {
         ? user.foodPreferences.join(', ')
         : 'None specified';
     final goalLabel = user.goal == 'lose'
-        ? 'losing weight'
+        ? 'achieving their health goals'
         : user.goal == 'gain'
-            ? 'gaining weight'
-            : 'maintaining weight';
+            ? 'building muscle and healthy weight gain'
+            : 'maintaining a healthy weight';
 
-    final prompt = 'You are an expert nutritionist and meal planner. '
-        'Generate a complete one-day meal plan for a real person with this profile:\n'
-        '- Life situation: ${user.lifeSituation}\n'
-        '- Region: ${user.region}\n'
-        '- Daily calorie target: ${user.targetCalories.toInt()} kcal\n'
-        '- Protein target: ${user.proteinG.toInt()}g\n'
-        '- Carbohydrates target: ${user.carbsG.toInt()}g\n'
-        '- Fat target: ${user.fatG.toInt()}g\n'
-        '- Fibre target: ${user.fiberG.toInt()}g\n'
-        '- Goal: $goalLabel\n'
-        '- Available foods today: $foodsLine\n'
-        '- Food preferences: $prefsLine\n\n'
-        'Rules:\n'
-        '- Build the plan primarily around available foods if listed. Small additions (spices, condiments) are OK.\n'
-        '- For hostel_student: no-cook or minimal prep (hot water/microwave). Student budget.\n'
-        '- For office_worker: packable, quick-prep, or nearby options.\n'
-        '- For work_from_home or homemaker: home-cooked meals with full recipes.\n'
-        '- Hit calorie and protein targets within 5%.\n'
-        '- Exactly 4 meals: breakfast, lunch, dinner, snack.\n'
-        '- Respond ONLY in valid JSON, no markdown, no code fences:\n'
-        '{"planDate":"$today","totalCalories":0,"totalProtein":0,"totalCarbs":0,"totalFat":0,"totalFibre":0,'
-        '"meals":[{"mealType":"breakfast","mealName":"string","items":[{"name":"string","quantity":"string",'
-        '"calories":0,"protein":0,"carbs":0,"fat":0,"fibre":0}],'
-        '"totalCalories":0,"totalProtein":0,"totalCarbs":0,"totalFat":0,"totalFibre":0,"prepNote":"string"}]}';
+    final prompt = '''
+You are an expert nutritionist. Generate a complete one-day meal plan.
+User profile:
+- Life situation: ${user.lifeSituation}
+- Region: ${user.region}
+- Daily calorie target: ${user.targetCalories.toInt()} kcal
+- Protein target: ${user.proteinG.toInt()}g
+- Carbohydrates target: ${user.carbsG.toInt()}g
+- Fat target: ${user.fatG.toInt()}g
+- Fibre target: ${user.fiberG.toInt()}g
+- Goal: $goalLabel
+- Available foods today: $foodsLine
+- Food preferences: $prefsLine
+
+Rules:
+- Build the plan primarily around available foods if listed.
+- For hostel_student: no-cook or minimal prep. Student budget.
+- For office_worker: packable, quick-prep or nearby food options.
+- For work_from_home or homemaker: home-cooked meals.
+- Hit calorie and protein targets within 5%.
+- Exactly 4 meals: breakfast, lunch, dinner, snack.
+
+Respond with ONLY a raw JSON object matching this schema exactly:
+{"planDate":"$today","totalCalories":0,"totalProtein":0,"totalCarbs":0,"totalFat":0,"totalFibre":0,"meals":[{"mealType":"breakfast","mealName":"string","items":[{"name":"string","quantity":"string","calories":0,"protein":0,"carbs":0,"fat":0,"fibre":0}],"totalCalories":0,"totalProtein":0,"totalCarbs":0,"totalFat":0,"totalFibre":0,"prepNote":"string"}]}''';
 
     try {
       final raw = await _sendJsonPrompt(prompt);
-      if (raw == null) return null;
       return MealPlanResult.fromJson(raw);
     } catch (e) {
-      debugPrint('[GEMINI] generateMealPlan parse error: $e');
+      debugPrint('[GEMINI] generateMealPlan error: $e');
       return null;
     }
   }
@@ -115,25 +230,146 @@ class GeminiService {
     final macroLine = fitMacros && remCalories != null
         ? 'Adjust recipe quantities to fit remaining macros: '
             '${remCalories.toInt()} kcal, ${remProtein!.toInt()}g protein, '
-            '${remCarbs!.toInt()}g carbs, ${remFat!.toInt()}g fat. '
+            '${remCarbs!.toInt()}g carbs, ${remFat!.toInt()}g fat.'
         : '';
 
-    final prompt = 'Generate a detailed recipe for: $query. '
-        'User: region ${user.region}, life situation ${user.lifeSituation}. '
-        '$macroLine'
-        'Respond ONLY in valid JSON, no markdown, no code fences: '
-        '{"recipeName":"string","servings":1,"prepTimeMinutes":0,"cookTimeMinutes":0,'
-        '"ingredients":[{"name":"string","quantity":"string","gramsEquivalent":0}],'
-        '"instructions":["string"],'
-        '"nutritionPerServing":{"calories":0,"protein":0,"carbs":0,"fat":0,"fibre":0},'
-        '"macroNote":"string"}';
+    final prompt = '''
+Generate a detailed recipe for: $query.
+User region: ${user.region}. Life situation: ${user.lifeSituation}.
+$macroLine
+
+Respond with ONLY a raw JSON object matching this schema:
+{"recipeName":"string","servings":1,"prepTimeMinutes":0,"cookTimeMinutes":0,"ingredients":[{"name":"string","quantity":"string","gramsEquivalent":0}],"instructions":["string"],"nutritionPerServing":{"calories":0,"protein":0,"carbs":0,"fat":0,"fibre":0},"macroNote":"string"}''';
 
     try {
       final raw = await _sendJsonPrompt(prompt);
-      if (raw == null) return null;
       return RecipeResult.fromJson(raw);
     } catch (e) {
-      debugPrint('[GEMINI] generateRecipeResult parse error: $e');
+      debugPrint('[GEMINI] generateRecipeResult error: $e');
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Feature 4 — Photo Calorie Estimator (Vision) — also via direct HTTP.
+  // ---------------------------------------------------------------------------
+  Future<PhotoEstimateResult> estimateMealFromPhoto(
+      List<int> imageBytes, String mimeType) async {
+    const visionPrompt =
+        'You are a nutrition expert analyzing a photo of food. '
+        'Provide your best estimate of nutritional content. '
+        'Consider typical portion sizes. '
+        'Respond with ONLY a raw JSON object: '
+        '{"foods":["item1"],"totalCalories":0,"protein":0,"carbs":0,"fat":0,"fibre":0,'
+        '"confidence":"medium","portionNotes":"string","warningMessage":"string or null"}';
+
+    final apiKey = _apiKey;
+    final uri = Uri.parse('$_baseUrl?key=$apiKey');
+    final base64Image = base64Encode(Uint8List.fromList(imageBytes));
+
+    final requestBody = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {
+              'inline_data': {
+                'mime_type': mimeType,
+                'data': base64Image,
+              }
+            },
+            {'text': visionPrompt}
+          ]
+        }
+      ],
+      'generationConfig': {
+        'temperature': 0.4,
+        'maxOutputTokens': 1024,
+      }
+    });
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw PhotoEstimationException(
+            'HTTP ${response.statusCode}: ${response.body}');
+      }
+
+      final responseJson =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      final text = (responseJson['candidates'] as List?)
+          ?.firstOrNull?['content']?['parts']?[0]?['text'] as String?;
+
+      if (text == null || text.isEmpty) {
+        throw PhotoEstimationException('Empty response from Gemini');
+      }
+
+      final cleaned = _cleanJson(text);
+      final json = jsonDecode(cleaned) as Map<String, dynamic>;
+      return PhotoEstimateResult.fromJson(json);
+    } on PhotoEstimationException {
+      rethrow;
+    } catch (e) {
+      throw PhotoEstimationException('Failed to analyze photo: $e');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Feature 7 — Emergency Button: Encouraging message (plain text, not JSON).
+  // ---------------------------------------------------------------------------
+  Future<String?> generateEmergencyMessage({
+    required int caloriesOver,
+    required String adjustmentType,
+  }) async {
+    final actionDesc = adjustmentType == 'distribute_week'
+        ? 'they will distribute the extra $caloriesOver calories across the rest of the week'
+        : 'they will push their goal date back by a few days';
+
+    final prompt =
+        'A user tracking their diet went over their calorie target by '
+        '$caloriesOver calories. They chose to handle it by: $actionDesc. '
+        'Write a short, warm, non-judgmental encouraging message (2-3 sentences). '
+        'Respond with only the plain text message, no JSON, no formatting.';
+
+    final apiKey = _apiKey;
+    final uri = Uri.parse('$_baseUrl?key=$apiKey');
+
+    final requestBody = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {'text': prompt}
+          ]
+        }
+      ],
+      'generationConfig': {
+        'temperature': 0.8,
+        'maxOutputTokens': 256,
+      }
+    });
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) return null;
+
+      final responseJson =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      return (responseJson['candidates'] as List?)
+          ?.firstOrNull?['content']?['parts']?[0]?['text'] as String?;
+    } catch (_) {
       return null;
     }
   }
@@ -144,69 +380,6 @@ class GeminiService {
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
   }
-
-  // ---------------------------------------------------------------------------
-  // Feature 4 — Photo Calorie Estimator (Vision).
-  // Returns PhotoEstimateResult or throws PhotoEstimationException on failure.
-  // ---------------------------------------------------------------------------
-  Future<PhotoEstimateResult> estimateMealFromPhoto(
-      List<int> imageBytes, String mimeType) async {
-    const systemPrompt = 'You are a nutrition expert analyzing a photo of food. '
-        'The user cannot measure this meal accurately. Analyze the image carefully '
-        'and provide your best estimate. Consider typical portion sizes and standard '
-        'recipes. Respond ONLY in valid JSON with no explanation, no markdown, no '
-        'code fences. Use exactly this structure: '
-        '{ "foods": ["food item 1", "food item 2"], "totalCalories": number, '
-        '"protein": number, "carbs": number, "fat": number, "fibre": number, '
-        '"confidence": "low" or "medium" or "high", '
-        '"portionNotes": "brief note about portion assumptions", '
-        '"warningMessage": "only include if confidence is low or medium — explain why estimate may be off" }';
-
-    try {
-      final content = [
-        Content.multi([
-          TextPart(systemPrompt),
-          DataPart(mimeType, Uint8List.fromList(imageBytes)),
-        ])
-      ];
-      final response = await _gemini.generateContent(content);
-      final text = response.text ?? '';
-      final cleaned = text
-          .replaceAll(RegExp(r'```json\s*'), '')
-          .replaceAll(RegExp(r'```\s*'), '')
-          .trim();
-      final json = jsonDecode(cleaned) as Map<String, dynamic>;
-      return PhotoEstimateResult.fromJson(json);
-    } catch (e) {
-      throw PhotoEstimationException('Failed to analyze photo: $e');
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Feature 7 — Emergency Button: Encouraging message after adjustment.
-  // ---------------------------------------------------------------------------
-  Future<String?> generateEmergencyMessage({
-    required int caloriesOver,
-    required String adjustmentType, // 'distribute_week' | 'push_date'
-  }) async {
-    final actionDesc = adjustmentType == 'distribute_week'
-        ? 'they will distribute the extra $caloriesOver calories across the rest of the week'
-        : 'they will push their goal date back by a few days';
-    final prompt = '''
-A user is tracking their diet and went over their calorie target today by $caloriesOver calories.
-They chose to handle it by: $actionDesc.
-Write a short, warm, encouraging message (2-3 sentences) that is non-judgmental and motivating.
-Respond with only the plain text message. No JSON, no formatting.
-''';
-    try {
-      final content = [Content.text(prompt)];
-      final response = await _gemini.generateContent(content);
-      return response.text?.trim();
-    } catch (e) {
-      return null;
-    }
-  }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -219,7 +392,7 @@ class PhotoEstimateResult {
   final double carbs;
   final double fat;
   final double fibre;
-  final String confidence; // 'low' | 'medium' | 'high'
+  final String confidence;
   final String portionNotes;
   final String? warningMessage;
 
@@ -237,10 +410,9 @@ class PhotoEstimateResult {
 
   factory PhotoEstimateResult.fromJson(Map<String, dynamic> json) {
     final rawFoods = json['foods'];
-    List<String> foods = [];
-    if (rawFoods is List) {
-      foods = rawFoods.map((e) => e.toString()).toList();
-    }
+    final foods = rawFoods is List
+        ? rawFoods.map((e) => e.toString()).toList()
+        : <String>[];
     return PhotoEstimateResult(
       foods:         foods,
       totalCalories: (json['totalCalories'] as num?)?.toDouble() ?? 0,
