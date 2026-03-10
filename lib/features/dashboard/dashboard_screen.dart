@@ -13,6 +13,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../models/user_model.dart';
 import '../../widgets/app_card.dart';
+import '../emergency/emergency_button_sheet.dart';
 import 'dashboard_provider.dart';
 import 'widgets/calorie_ring.dart';
 import 'widgets/macro_bar_card.dart';
@@ -31,6 +32,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _showRecalibrationBanner = false;
   bool _showNudgeBanner = false;
+  bool _showAdjustedBanner = false;
 
   @override
   void initState() {
@@ -157,6 +159,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 () => _showRecalibrationBanner = false),
                           ),
 
+                        // ── Plan adjusted banner ──────────────────────────────
+                        if (_showAdjustedBanner)
+                          _PlanAdjustedBanner(
+                            onDismiss: () =>
+                                setState(() => _showAdjustedBanner = false),
+                          ),
+
                         // ── Calorie ring card ────────────────────────────────
                         if (s != null) ...[
                           AppCard(
@@ -233,7 +242,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(height: 20),
 
                         // ── Emergency button ─────────────────────────────────
-                        _EmergencyButton(),
+                        _EmergencyButton(
+                          isOver: s != null &&
+                              s.totalCalories > s.targetCalories + 200,
+                          onSheetResult: (adjusted) {
+                            if (adjusted == true) {
+                              setState(
+                                  () => _showAdjustedBanner = true);
+                              provider.refresh(widget.user);
+                            }
+                          },
+                          user: widget.user,
+                          summary: s,
+                        ),
 
                         const SizedBox(height: 32),
                       ]),
@@ -472,48 +493,156 @@ class _RecalibrationBanner extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Emergency button
+// Emergency button — pulses amber when user is 200+ kcal over target
 // ---------------------------------------------------------------------------
-class _EmergencyButton extends StatelessWidget {
+class _EmergencyButton extends StatefulWidget {
+  final bool isOver;
+  final ValueChanged<bool?> onSheetResult;
+  final UserModel user;
+  final dynamic summary; // DashboardSummary — nullable
+
+  const _EmergencyButton({
+    required this.isOver,
+    required this.onSheetResult,
+    required this.user,
+    required this.summary,
+  });
+
+  @override
+  State<_EmergencyButton> createState() => _EmergencyButtonState();
+}
+
+class _EmergencyButtonState extends State<_EmergencyButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _opacity;
+
+  static const _amber = Color(0xFFFFB300);
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+      lowerBound: 0.0,
+      upperBound: 1.0,
+    );
+    _opacity = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+    if (widget.isOver) _pulse.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_EmergencyButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isOver && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!widget.isOver && _pulse.isAnimating) {
+      _pulse.stop();
+      _pulse.value = 0.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  void _openSheet() {
+    HapticFeedback.mediumImpact();
+    if (widget.summary == null) return;
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EmergencyButtonSheet(
+        user: widget.user,
+        summary: widget.summary,
+      ),
+    ).then(widget.onSheetResult);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Emergency Adjust — Feature 7 coming soon',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.primaryText)),
-            backgroundColor: AppColors.cardSurface,
-            behavior: SnackBarBehavior.floating,
+    final borderColor = widget.isOver ? _amber : AppColors.destructive;
+    final bgColor = widget.isOver
+        ? _amber.withOpacity(0.07)
+        : const Color(0x08FF5252);
+    final textColor = widget.isOver ? _amber : AppColors.destructive;
+
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, child) => Opacity(
+        opacity: widget.isOver ? _opacity.value : 1.0,
+        child: child,
+      ),
+      child: GestureDetector(
+        onTap: _openSheet,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.5),
           ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0x08FF5252),
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: AppColors.destructive, width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.bolt, color: AppColors.destructive, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Off Track Today? Emergency Adjust',
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.destructive,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.bolt, color: textColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Off Track Today? Emergency Adjust',
+                style: AppTextStyles.body.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Plan adjusted banner — shown after successful adjustment
+// ---------------------------------------------------------------------------
+class _PlanAdjustedBanner extends StatelessWidget {
+  final VoidCallback onDismiss;
+  const _PlanAdjustedBanner({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B3A27),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const Text('✅', style: TextStyle(fontSize: 16)),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Plan adjusted — you\'re back on track',
+              style: TextStyle(color: Color(0xFF81C784), fontSize: 13),
+            ),
+          ),
+          GestureDetector(
+            onTap: onDismiss,
+            child: const Icon(Icons.close,
+                size: 16, color: Color(0xFF4CAF50)),
+          ),
+        ],
       ),
     );
   }

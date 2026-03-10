@@ -70,21 +70,38 @@ class DashboardService {
   // ---------------------------------------------------------------------------
   Future<Map<String, double>> getUserTargets(String userId) async {
     try {
+      final today = _dateStr(DateTime.now());
+
+      // ── Check for active emergency override first ────────────────────────
+      final override = await _client
+          .from('daily_targets')
+          .select('target_calories')
+          .eq('user_id', userId)
+          .eq('date', today)
+          .eq('is_emergency_override', true)
+          .maybeSingle();
+
       final data = await _client
           .from('users')
           .select(
               'target_calories, protein_g, carbs_g, fat_g, fiber_g, tdee, weekly_pace_percent, daily_deficit_surplus')
           .eq('id', userId)
           .single();
+
+      final standardTarget = (data['target_calories'] as num?)?.toDouble() ?? 2000;
+      final effectiveTarget = override != null
+          ? (override['target_calories'] as num?)?.toDouble() ?? standardTarget
+          : standardTarget;
+
       return {
-        'targetCalories':     (data['target_calories']      as num?)?.toDouble() ?? 2000,
-        'targetProtein':      (data['protein_g']            as num?)?.toDouble() ?? 150,
-        'targetCarbs':        (data['carbs_g']              as num?)?.toDouble() ?? 200,
-        'targetFat':          (data['fat_g']                as num?)?.toDouble() ?? 55,
-        'targetFibre':        (data['fiber_g']              as num?)?.toDouble() ?? 30,
-        'tdee':               (data['tdee']                 as num?)?.toDouble() ?? 2000,
-        'weeklyPacePercent':  (data['weekly_pace_percent']  as num?)?.toDouble() ?? 0.75,
-        'dailyDeficitSurplus':(data['daily_deficit_surplus']as num?)?.toDouble() ?? 0,
+        'targetCalories':      effectiveTarget,
+        'targetProtein':       (data['protein_g']             as num?)?.toDouble() ?? 150,
+        'targetCarbs':         (data['carbs_g']               as num?)?.toDouble() ?? 200,
+        'targetFat':           (data['fat_g']                 as num?)?.toDouble() ?? 55,
+        'targetFibre':         (data['fiber_g']               as num?)?.toDouble() ?? 30,
+        'tdee':                (data['tdee']                  as num?)?.toDouble() ?? 2000,
+        'weeklyPacePercent':   (data['weekly_pace_percent']   as num?)?.toDouble() ?? 0.75,
+        'dailyDeficitSurplus': (data['daily_deficit_surplus'] as num?)?.toDouble() ?? 0,
       };
     } catch (_) {
       return {
