@@ -35,6 +35,17 @@ class UserModel {
   final String? liftingExperience;   // 'none' | 'beginner' | 'intermediate' | 'advanced'
   final double? proteinMultiplier;   // final g/kg multiplier used, for reference
 
+  // Feature 7 additions — auto adjustment tracking
+  final bool goalDateReminderShown;
+  final String? lastSituation3Prompt;     // yyyy-MM-dd
+  final String? lastDivergenceCheck;      // yyyy-MM-dd
+  final String? lastWeeklyRecalcDate;     // yyyy-MM-dd
+  final double? previousWeeklyWeight;     // last week's 7-day average
+  final double pendingTargetAdjustment;   // kcal held back for phased large change
+  final int checkinDay;                   // 1 = Monday … 7 = Sunday (ISO)
+  final bool lowPressureMode;
+  final String weightUnit;                // 'kg' | 'lbs'
+
   const UserModel({
     this.id,
     required this.name,
@@ -63,6 +74,15 @@ class UserModel {
     this.proteinPreference = 'moderate',
     this.liftingExperience,
     this.proteinMultiplier,
+    this.goalDateReminderShown = false,
+    this.lastSituation3Prompt,
+    this.lastDivergenceCheck,
+    this.lastWeeklyRecalcDate,
+    this.previousWeeklyWeight,
+    this.pendingTargetAdjustment = 0,
+    this.checkinDay = 1,
+    this.lowPressureMode = false,
+    this.weightUnit = 'kg',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -96,6 +116,15 @@ class UserModel {
       proteinPreference: json['protein_preference'] as String? ?? 'moderate',
       liftingExperience: json['lifting_experience'] as String?,
       proteinMultiplier: (json['protein_multiplier'] as num?)?.toDouble(),
+      goalDateReminderShown: json['goal_date_reminder_shown'] as bool? ?? false,
+      lastSituation3Prompt: json['last_situation3_prompt'] as String?,
+      lastDivergenceCheck: json['last_divergence_check'] as String?,
+      lastWeeklyRecalcDate: json['last_weekly_recalc_date'] as String?,
+      previousWeeklyWeight: (json['previous_weekly_weight'] as num?)?.toDouble(),
+      pendingTargetAdjustment: (json['pending_target_adjustment'] as num?)?.toDouble() ?? 0,
+      checkinDay: (json['checkin_day'] as num?)?.toInt() ?? 1,
+      lowPressureMode: json['low_pressure_mode'] as bool? ?? false,
+      weightUnit: json['weight_unit'] as String? ?? 'kg',
     );
   }
 
@@ -127,6 +156,15 @@ class UserModel {
       'protein_preference': proteinPreference,
       if (liftingExperience != null) 'lifting_experience': liftingExperience,
       if (proteinMultiplier != null) 'protein_multiplier': proteinMultiplier,
+      'goal_date_reminder_shown': goalDateReminderShown,
+      if (lastSituation3Prompt != null) 'last_situation3_prompt': lastSituation3Prompt,
+      if (lastDivergenceCheck != null) 'last_divergence_check': lastDivergenceCheck,
+      if (lastWeeklyRecalcDate != null) 'last_weekly_recalc_date': lastWeeklyRecalcDate,
+      if (previousWeeklyWeight != null) 'previous_weekly_weight': previousWeeklyWeight,
+      'pending_target_adjustment': pendingTargetAdjustment,
+      'checkin_day': checkinDay,
+      'low_pressure_mode': lowPressureMode,
+      'weight_unit': weightUnit,
     };
   }
 
@@ -157,6 +195,15 @@ class UserModel {
     String? proteinPreference,
     String? liftingExperience,
     double? proteinMultiplier,
+    bool? goalDateReminderShown,
+    String? lastSituation3Prompt,
+    String? lastDivergenceCheck,
+    String? lastWeeklyRecalcDate,
+    double? previousWeeklyWeight,
+    double? pendingTargetAdjustment,
+    int? checkinDay,
+    bool? lowPressureMode,
+    String? weightUnit,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -185,6 +232,15 @@ class UserModel {
       proteinPreference: proteinPreference ?? this.proteinPreference,
       liftingExperience: liftingExperience ?? this.liftingExperience,
       proteinMultiplier: proteinMultiplier ?? this.proteinMultiplier,
+      goalDateReminderShown: goalDateReminderShown ?? this.goalDateReminderShown,
+      lastSituation3Prompt: lastSituation3Prompt ?? this.lastSituation3Prompt,
+      lastDivergenceCheck: lastDivergenceCheck ?? this.lastDivergenceCheck,
+      lastWeeklyRecalcDate: lastWeeklyRecalcDate ?? this.lastWeeklyRecalcDate,
+      previousWeeklyWeight: previousWeeklyWeight ?? this.previousWeeklyWeight,
+      pendingTargetAdjustment: pendingTargetAdjustment ?? this.pendingTargetAdjustment,
+      checkinDay: checkinDay ?? this.checkinDay,
+      lowPressureMode: lowPressureMode ?? this.lowPressureMode,
+      weightUnit: weightUnit ?? this.weightUnit,
     );
   }
 }

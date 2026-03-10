@@ -400,7 +400,7 @@ class EmergencyService {
     return ((thursday.difference(firstThursday).inDays) / 7).floor() + 1;
   }
 
-  (String?) _interventionMessage(InterventionLevel level) {
+  String? _interventionMessage(InterventionLevel level) {
     return switch (level) {
       InterventionLevel.mild =>
         "You've been using this feature quite a bit recently. "

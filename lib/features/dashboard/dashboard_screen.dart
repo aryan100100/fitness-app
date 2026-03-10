@@ -11,14 +11,20 @@ import 'package:shimmer/shimmer.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/auto_adjustment_service.dart';
 import '../../models/user_model.dart';
 import '../../widgets/app_card.dart';
 import '../emergency/emergency_button_sheet.dart';
+import '../weight_log/weight_log_screen.dart';
 import 'dashboard_provider.dart';
+import 'widgets/adjustment_card.dart';
 import 'widgets/calorie_ring.dart';
+import 'widgets/divergence_diagnostic_card.dart';
+import 'widgets/goal_progress_card.dart';
 import 'widgets/macro_bar_card.dart';
 import 'widgets/meal_section.dart';
 import 'widgets/tdee_confidence_card.dart';
+import 'widgets/weekly_recalc_card.dart';
 import 'widgets/weekly_summary_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -33,6 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _showRecalibrationBanner = false;
   bool _showNudgeBanner = false;
   bool _showAdjustedBanner = false;
+  AdjustmentSituation? _activeSituation;
 
   @override
   void initState() {
@@ -40,7 +47,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().refresh(widget.user).then((_) {
         _checkNudge();
+        _checkSituations();
       });
+    });
+  }
+
+  void _checkSituations() {
+    AutoAdjustmentService.instance
+        .checkAllSituations(widget.user)
+        .then((situations) {
+      if (mounted && situations.isNotEmpty) {
+        setState(() => _activeSituation = situations.first);
+      }
     });
   }
 
@@ -49,6 +67,117 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final summary = context.read<DashboardProvider>().summary;
     if (hour >= 14 && summary != null && summary.totalCalories == 0) {
       if (mounted) setState(() => _showNudgeBanner = true);
+    }
+  }
+
+  void _navigateToWeightLog() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WeightLogScreen(user: widget.user),
+      ),
+    );
+  }
+
+  Widget _buildSituationCard(
+      AdjustmentSituation situation, DashboardProvider provider) {
+    void dismiss() => setState(() => _activeSituation = null);
+
+    switch (situation.type) {
+      case SituationType.loggingGap:
+        return AdjustmentCard(
+          borderColor: const Color(0xFFFFB300),
+          emoji: '👋',
+          title: 'Welcome back',
+          body: "You've had a short break from logging — that's completely normal. "
+              "A quick weight check helps us keep your plan accurate.",
+          onDismiss: dismiss,
+          actions: [
+            CardActionButton(
+              label: 'Log my weight',
+              onTap: () {
+                dismiss();
+                _navigateToWeightLog();
+              },
+            ),
+            const SizedBox(height: 6),
+            CardActionButton(
+                label: 'Skip for now', onTap: dismiss, isPrimary: false),
+          ],
+        );
+
+      case SituationType.goalDateApproaching:
+        return GoalProgressCard(
+          progress: situation.goalProgress!,
+          onDismiss: dismiss,
+          onApply: (option) async {
+            await AutoAdjustmentService.instance
+                .applyGoalOption(widget.user.id ?? '', option, situation.goalProgress!);
+            provider.refresh(widget.user);
+          },
+        );
+
+      case SituationType.weightUpdatePrompt:
+        return AdjustmentCard(
+          borderColor: const Color(0xFF4CAF50),
+          emoji: '🎯',
+          title: 'Great consistency!',
+          body: "You've been logging regularly. Updating your weight helps us keep your plan accurate "
+              "— even 1–2 kg of change affects your ideal targets.",
+          onDismiss: dismiss,
+          actions: [
+            CardActionButton(
+              label: 'Update my weight',
+              onTap: () {
+                AutoAdjustmentService.instance
+                    .updateLastSituation3Prompt(widget.user.id ?? '');
+                dismiss();
+                _navigateToWeightLog();
+              },
+            ),
+            const SizedBox(height: 6),
+            CardActionButton(
+                label: 'Remind me later', onTap: dismiss, isPrimary: false),
+          ],
+        );
+
+      case SituationType.weeklyRecalc:
+        final result = situation.recalcResult!;
+        return WeeklyRecalcCard(
+          result: result,
+          onDismiss: dismiss,
+          onApply: result.details != null
+              ? () async {
+                  await AutoAdjustmentService.instance.applyNewTargets(
+                    userId: widget.user.id ?? '',
+                    details: result.details!,
+                    phasedAdjustmentToStore:
+                        result.outcome == RecalcOutcome.largeChange
+                            ? result.details!.phasedAdjustment
+                            : 0,
+                  );
+                  provider.refresh(widget.user);
+                }
+              : null,
+          onSkip: () => AutoAdjustmentService.instance
+              .markWeeklyRecalcSkipped(widget.user.id ?? ''),
+        );
+
+      case SituationType.divergence:
+        return DivergenceDiagnosticCard(
+          result: situation.divergenceResult!,
+          isFemale: widget.user.biologicalSex == 'female',
+          onDismiss: dismiss,
+          onRequestRecalibration: () {
+            // Feature 4 recalibration flow — surfaced from banner
+            AutoAdjustmentService.instance
+                .updateLastDivergenceCheck(widget.user.id ?? '');
+          },
+          onSnooze: () {
+            AutoAdjustmentService.instance
+                .updateLastDivergenceCheck(widget.user.id ?? '');
+          },
+        );
     }
   }
 
@@ -165,6 +294,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             onDismiss: () =>
                                 setState(() => _showAdjustedBanner = false),
                           ),
+
+                        // ── Auto-adjustment situation card (Feature 7) ────────
+                        if (_activeSituation != null)
+                          _buildSituationCard(_activeSituation!, provider),
 
                         // ── Calorie ring card ────────────────────────────────
                         if (s != null) ...[
