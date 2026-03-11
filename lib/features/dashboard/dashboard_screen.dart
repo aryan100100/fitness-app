@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WeightLogScreen(user: widget.user),
+        builder: (_) => WeightLogScreen(user: widget.user, showBackButton: true),
       ),
     );
   }

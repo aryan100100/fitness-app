@@ -11,7 +11,8 @@ import 'dashboard/dashboard_screen.dart';
 import 'dashboard/dashboard_provider.dart';
 import 'diet_planner/diet_planner_screen.dart';
 import 'food_log/food_log_screen.dart';
-import 'profile/dev_profile_screen.dart';
+import 'profile/profile_screen.dart';
+import 'weight_log/weight_log_screen.dart';
 
 class BottomNavShell extends StatefulWidget {
   final UserModel user;
@@ -77,14 +78,14 @@ class _BottomNavShellState extends State<BottomNavShell> {
           children: [
             // Tab 0 — Dashboard
             DashboardScreen(user: widget.user),
-            // Tab 1 — Log (placeholder)
+            // Tab 1 — Log (placeholder — opened as modal via _onTabTapped)
             _PlaceholderTab(label: 'Food Log', icon: '🍽️'),
             // Tab 2 — AI Plan
             DietPlannerScreen(user: widget.user),
-            // Tab 3 — Workout (placeholder)
-            _PlaceholderTab(label: 'Workout', icon: '💪'),
+            // Tab 3 — Weight Log
+            WeightLogScreen(user: widget.user),
             // Tab 4 — Profile
-            const DevProfileScreen(),
+            ProfileScreen(user: widget.user),
           ],
         ),
         bottomNavigationBar: Container(
@@ -122,8 +123,8 @@ class _BottomNavShellState extends State<BottomNavShell> {
                     onTap: _onTabTapped,
                   ),
                   _NavItem(
-                    icon: Icons.fitness_center_rounded,
-                    label: 'Workout',
+                    icon: Icons.monitor_weight_rounded,
+                    label: 'Weight',
                     index: 3,
                     currentIndex: _currentIndex,
                     onTap: _onTabTapped,

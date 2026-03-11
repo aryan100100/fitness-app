@@ -2,7 +2,9 @@
 // ChangeNotifier that holds all today's dashboard data.
 // Exposes refresh() and deleteFoodLog() for UI layer.
 
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/dashboard_summary.dart';
 import '../../models/food_log_model.dart';
 import '../../models/user_model.dart';
@@ -37,6 +39,33 @@ class DashboardProvider extends ChangeNotifier {
     try {
       final userId = user.id ?? '';
       final today = _todayStr();
+
+      // OPTIMISTIC/OFFLINE LOAD
+      var prefs = await SharedPreferences.getInstance();
+      
+      // Load summary
+      final cachedSummaryStr = prefs.getString('cache_summary_$today');
+      if (cachedSummaryStr != null) {
+        try {
+          _summary = DashboardSummary.fromJson(jsonDecode(cachedSummaryStr));
+        } catch (_) {}
+      }
+
+      // Load meal logs
+      final cachedLogsStr = prefs.getString('cache_logs_$today');
+      if (cachedLogsStr != null) {
+        try {
+          final decoded = jsonDecode(cachedLogsStr) as Map<String, dynamic>;
+          _mealLogs = decoded.map((key, value) {
+            final list = (value as List).map((e) => FoodLogModel.fromJson(e)).toList();
+            return MapEntry(key, list);
+          });
+        } catch (_) {}
+      }
+
+      if (_summary != null || _mealLogs.isNotEmpty) {
+        notifyListeners(); // show cached UI instantly
+      }
 
       // Fire all data loads in parallel
       final results = await Future.wait([
@@ -94,10 +123,22 @@ class DashboardProvider extends ChangeNotifier {
         goal: user.goal,
       );
 
+      // SAVE CACHE
+      prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cache_summary_$today', jsonEncode(_summary!.toJson()));
+      
+      final logsJson = _mealLogs.map((key, value) => MapEntry(key, value.map((e) => e.toJson()).toList()));
+      await prefs.setString('cache_logs_$today', jsonEncode(logsJson));
+
       // Update streak silently after refresh
       _service.updateStreak(userId).ignore();
     } catch (e) {
-      _error = 'Could not load your data. Pull down to try again.';
+      // IF WE ALREADY HAVE CACHE, DON'T SHOW ERROR
+      if (_summary == null) {
+        _error = 'Could not load your data. Pull down to try again.';
+      } else {
+        _error = 'Offline. Showing cached data.';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -148,6 +189,16 @@ class DashboardProvider extends ChangeNotifier {
         goal: _summary!.goal,
       );
     }
+    
+    // SAVE CACHE AFTER DELETE
+    final today = _todayStr();
+    final prefs = await SharedPreferences.getInstance();
+    if (_summary != null) {
+      await prefs.setString('cache_summary_$today', jsonEncode(_summary!.toJson()));
+    }
+    final logsJson = _mealLogs.map((key, value) => MapEntry(key, value.map((e) => e.toJson()).toList()));
+    await prefs.setString('cache_logs_$today', jsonEncode(logsJson));
+
     notifyListeners();
   }
 

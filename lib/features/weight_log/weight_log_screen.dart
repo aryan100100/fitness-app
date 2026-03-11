@@ -15,7 +15,10 @@ import '../../../models/weight_log_model.dart';
 
 class WeightLogScreen extends StatefulWidget {
   final UserModel user;
-  const WeightLogScreen({super.key, required this.user});
+  /// When true, shows a back-arrow in the app bar (for modal/push nav).
+  /// When false (default), used as a tab — no back button.
+  final bool showBackButton;
+  const WeightLogScreen({super.key, required this.user, this.showBackButton = false});
 
   @override
   State<WeightLogScreen> createState() => _WeightLogScreenState();
@@ -173,7 +176,10 @@ class _WeightLogScreenState extends State<WeightLogScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         title: Text('Log Your Weight', style: AppTextStyles.body),
-        leading: const BackButton(color: AppColors.primaryText),
+        leading: widget.showBackButton
+            ? const BackButton(color: AppColors.primaryText)
+            : null,
+        automaticallyImplyLeading: false,
         actions: [
           // kg / lbs toggle
           GestureDetector(
