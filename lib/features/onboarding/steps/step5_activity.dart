@@ -18,25 +18,25 @@ class Step5Activity extends StatelessWidget {
 
   static const _levels = [
     (
-      emoji: '🪑',
+      icon: Icons.chair_outlined,
       title: 'Sedentary',
       subtitle: 'Desk job, little to no exercise',
       value: 'sedentary',
     ),
     (
-      emoji: '🚶',
+      icon: Icons.directions_walk_rounded,
       title: 'Lightly Active',
       subtitle: 'Light exercise 1–3 days/week',
       value: 'lightly_active',
     ),
     (
-      emoji: '🏃',
+      icon: Icons.directions_run_rounded,
       title: 'Moderately Active',
       subtitle: 'Exercise 3–5 days/week',
       value: 'moderately_active',
     ),
     (
-      emoji: '🔥',
+      icon: Icons.local_fire_department_rounded,
       title: 'Very Active',
       subtitle: 'Hard training 6–7 days/week or physical job',
       value: 'very_active',
@@ -69,8 +69,7 @@ class Step5Activity extends StatelessWidget {
                       onTap: () => controller.setActivityLevel(level.value),
                       child: Row(
                         children: [
-                          Text(level.emoji,
-                              style: const TextStyle(fontSize: 28)),
+                          Icon(level.icon, size: 28, color: AppColors.primaryAccent),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(

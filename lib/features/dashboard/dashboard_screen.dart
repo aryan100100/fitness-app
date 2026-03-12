@@ -184,9 +184,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String get _greeting {
     final hour = DateTime.now().hour;
     final name = widget.user.name.split(' ').first;
-    if (hour < 12) return 'Good morning, $name 👋';
-    if (hour < 17) return 'Good afternoon, $name 👋';
-    return 'Good evening, $name 👋';
+    if (hour < 12) return 'Good morning, $name';
+    if (hour < 17) return 'Good afternoon, $name';
+    return 'Good evening, $name';
   }
 
   String get _todayDate {
@@ -242,8 +242,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: AppColors.cardSurface,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                    color: AppColors.primaryAccent,
-                                    width: 1.5),
+                                    color: AppColors.subtleBorder,
+                                    width: 1.0),
                               ),
                               child: Center(
                                 child: Text(
@@ -251,7 +251,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ? widget.user.name[0].toUpperCase()
                                       : '?',
                                   style: AppTextStyles.body.copyWith(
-                                      color: AppColors.primaryAccent,
+                                      color: AppColors.primaryText,
                                       fontWeight: FontWeight.bold),
                                 ),
                               ),
@@ -433,15 +433,15 @@ class _StreakBadge extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.primaryAccent.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.primaryAccent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-              color: AppColors.primaryAccent.withOpacity(0.3)),
+              color: AppColors.primaryAccent.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🔥', style: TextStyle(fontSize: 14)),
+            const Icon(Icons.local_fire_department_outlined, size: 16, color: AppColors.primaryAccent),
             const SizedBox(width: 4),
             Text(
               '$streak day streak',
@@ -456,7 +456,7 @@ class _StreakBadge extends StatelessWidget {
     }
     return Row(
       children: [
-        const Text('🌱', style: TextStyle(fontSize: 14)),
+        const Icon(Icons.eco_outlined, size: 16, color: AppColors.secondaryText),
         const SizedBox(width: 6),
         Text('Log today to start your streak',
             style: AppTextStyles.caption),
@@ -474,7 +474,7 @@ class _OverageMessage extends StatelessWidget {
     return AppCard(
       child: Row(
         children: [
-          const Text('💚', style: TextStyle(fontSize: 18)),
+          const Icon(Icons.favorite_outline, color: AppColors.primaryAccent, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -496,11 +496,11 @@ class _LowWeightBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.warning, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,14 +534,14 @@ class _NudgeBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
         border:
-            Border.all(color: AppColors.warning.withOpacity(0.4), width: 1),
+            Border.all(color: AppColors.warning.withValues(alpha: 0.2), width: 1),
       ),
       child: Row(
         children: [
-          const Text('⏰', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.schedule_outlined, color: AppColors.warning, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -597,14 +597,14 @@ class _RecalibrationBanner extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.primaryAccent.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.primaryAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: AppColors.primaryAccent.withOpacity(0.4), width: 1),
+              color: AppColors.primaryAccent.withValues(alpha: 0.2), width: 1),
         ),
         child: Row(
           children: [
-            const Text('📊', style: TextStyle(fontSize: 16)),
+            const Icon(Icons.bar_chart_outlined, color: AppColors.primaryAccent, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -719,8 +719,8 @@ class _EmergencyButtonState extends State<_EmergencyButton>
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.0),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -762,7 +762,7 @@ class _PlanAdjustedBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('✅', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50), size: 18),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(

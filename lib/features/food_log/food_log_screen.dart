@@ -208,7 +208,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                 filled: true,
                 fillColor: AppColors.cardSurface,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -326,9 +326,9 @@ class _InitialContent extends StatelessWidget {
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.cardSurface,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                          color: AppColors.primaryAccent.withOpacity(0.3)),
+                          color: AppColors.primaryAccent.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
@@ -360,7 +360,7 @@ class _InitialContent extends StatelessWidget {
                       horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [

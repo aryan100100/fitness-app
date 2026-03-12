@@ -17,21 +17,21 @@ class Step6ProteinPreference extends StatelessWidget {
 
   static const _options = [
     (
-      emoji: '💪',
+      icon: Icons.fitness_center_rounded,
       label: 'High Protein',
       description:
           'Ideal if you are lean, experienced in the gym, or prefer a high protein diet. Maximises muscle preservation.',
       value: 'high',
     ),
     (
-      emoji: '✅',
+      icon: Icons.check_circle_outline,
       label: 'Moderate — Recommended',
       description:
           'The science-backed sweet spot for most people. Enough to build and preserve muscle without overcomplicating your diet.',
       value: 'moderate',
     ),
     (
-      emoji: '🍽️',
+      icon: Icons.restaurant_outlined,
       label: 'Comfortable',
       description:
           'Still enough to build and preserve muscle, but more flexible. Good if you find it hard to hit high protein targets.',
@@ -64,7 +64,7 @@ class Step6ProteinPreference extends StatelessWidget {
                     padding: const EdgeInsets.only(
                         bottom: AppSpacing.cardSpacing),
                     child: _ProteinCard(
-                      emoji: opt.emoji,
+                      icon: opt.icon,
                       label: opt.label,
                       description: opt.description,
                       value: opt.value,
@@ -99,7 +99,7 @@ class Step6ProteinPreference extends StatelessWidget {
 // Protein option card
 // ---------------------------------------------------------------------------
 class _ProteinCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String label;
   final String description;
   final String value;
@@ -107,7 +107,7 @@ class _ProteinCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ProteinCard({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.description,
     required this.value,
@@ -137,7 +137,7 @@ class _ProteinCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 26)),
+            Icon(icon, size: 26, color: AppColors.primaryAccent),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

@@ -33,7 +33,7 @@ class Step3Goal extends StatelessWidget {
               const SizedBox(height: 32),
 
               _GoalCard(
-                emoji: '🎯',
+                icon: Icons.trending_down_rounded,
                 title: 'Lose Weight',
                 subtitle: 'Create a sustainable calorie deficit',
                 value: 'lose',
@@ -43,7 +43,7 @@ class Step3Goal extends StatelessWidget {
               const SizedBox(height: AppSpacing.cardSpacing),
 
               _GoalCard(
-                emoji: '💪',
+                icon: Icons.fitness_center_rounded,
                 title: 'Gain Weight',
                 subtitle: 'Build muscle with a clean lean bulk',
                 value: 'gain',
@@ -53,7 +53,7 @@ class Step3Goal extends StatelessWidget {
               const SizedBox(height: AppSpacing.cardSpacing),
 
               _GoalCard(
-                emoji: '⚖️',
+                icon: Icons.balance_rounded,
                 title: 'Maintain Weight',
                 subtitle: 'Stay at your current weight',
                 value: 'maintain',
@@ -139,7 +139,7 @@ class Step3Goal extends StatelessWidget {
 }
 
 class _GoalCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final String value;
@@ -147,7 +147,7 @@ class _GoalCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _GoalCard({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
@@ -162,7 +162,7 @@ class _GoalCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 28)),
+          Icon(icon, size: 28, color: AppColors.primaryAccent),
           const SizedBox(width: 16),
           Expanded(
             child: Column(

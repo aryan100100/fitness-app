@@ -114,13 +114,13 @@ class _CalorieRingWidgetState extends State<CalorieRingWidget>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _StatPill(
-              icon: '🍽️',
+              icon: Icons.restaurant_outlined,
               label: 'Eaten',
               value: '${widget.consumed.round()} kcal',
             ),
             _StatPill(
-              icon: '🎯',
-              label: 'Goal',
+              icon: Icons.flag_outlined,
+              label: 'Target',
               value: '${widget.target.round()} kcal',
             ),
             _EstimatePill(),
@@ -140,8 +140,8 @@ class _RingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 14;
-    const strokeWidth = 14.0;
+    final radius = size.width / 2 - 18;
+    const strokeWidth = 18.0;
 
     // Track
     final trackPaint = Paint()
@@ -174,7 +174,7 @@ class _RingPainter extends CustomPainter {
 }
 
 class _StatPill extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String label;
   final String value;
 
@@ -195,8 +195,15 @@ class _StatPill extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$icon ${label}', style: AppTextStyles.caption),
-          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: AppColors.secondaryText),
+              const SizedBox(width: 4),
+              Text(label, style: AppTextStyles.caption),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
             value,
             style: AppTextStyles.caption.copyWith(
@@ -248,7 +255,7 @@ class _EstimatePill extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Text('📊', style: TextStyle(fontSize: 20)),
+              const Icon(Icons.bar_chart_outlined, size: 20, color: AppColors.primaryAccent),
               const SizedBox(width: 8),
               Text('About Calorie Estimates',
                   style: AppTextStyles.body

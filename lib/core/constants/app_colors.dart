@@ -1,5 +1,5 @@
-// [HEALTH APP] — Design System Colours
-// Single source of truth. Import this in every screen.
+// [HEALTH APP] — Premium UI Design System Colours
+// Deep iOS-style dark mode palette.
 
 import 'package:flutter/material.dart';
 
@@ -7,27 +7,38 @@ class AppColors {
   AppColors._();
 
   // --- Backgrounds ---
-  static const Color background = Color(0xFF0D0D0D);
-  static const Color cardSurface = Color(0xFF1A1A1A);
-  static const Color elevatedCard = Color(0xFF222222);
+  // True black for modern OLED screens (iOS style)
+  static const Color background = Color(0xFF000000);
+  // Elevated surfaces (cards, bottom sheets)
+  static const Color cardSurface = Color(0xFF141414);
+  // Higher elevation (modals, dialogs, floating elements)
+  static const Color elevatedCard = Color(0xFF1C1C1E);
 
   // --- Accents ---
-  static const Color primaryAccent = Color(0xFF00C853);
-  static const Color secondaryAccent = Color(0xFF69F0AE);
+  // A single vibrant accent color (Deep Premium Orange) analogous to the reference
+  static const Color primaryAccent = Color(0xFFFF9F0A); // iOS System Orange
+  static const Color secondaryAccent = Color(0xFFFFB340);
 
   // --- Status ---
-  static const Color destructive = Color(0xFFFF5252);
-  static const Color warning = Color(0xFFFFB300);
+  static const Color destructive = Color(0xFFFF453A); 
+  static const Color warning = Color(0xFFFF9F0A);     
+  static const Color info = Color(0xFF0A84FF);        
 
   // --- Text ---
   static const Color primaryText = Color(0xFFFFFFFF);
-  static const Color secondaryText = Color(0xFF9E9E9E);
+  static const Color secondaryText = Color(0xFFA1A1A6); // Lighter, cleaner grey
+  static const Color tertiaryText = Color(0xFF636366);
 
-  // --- Dividers ---
-  static const Color divider = Color(0xFF2A2A2A);
+  // --- Dividers & Borders ---
+  static const Color divider = Color(0xFF2C2C2E);     
+  static const Color subtleBorder = Color(0xFF1C1C1E);
 
-  // --- Macro bar colours ---
-  static const Color proteinBar = Color(0xFF00C853); // green
-  static const Color carbBar = Color(0xFF448AFF);    // blue
-  static const Color fatBar = Color(0xFFFF9100);     // orange
+  // --- Macro bar colours (Monochromatic styling to reduce clutter) ---
+  static const Color proteinBar = Color(0xFFE5E5EA); // Almost white
+  static const Color carbBar = Color(0xFF8E8E93);    // Mid Grey
+  static const Color fatBar = Color(0xFF48484A);     // Dark Grey
+
+  // --- Shimmer Base Colors ---
+  static const Color shimmerBase = Color(0xFF1C1C1E);
+  static const Color shimmerHighlight = Color(0xFF2C2C2E);
 }

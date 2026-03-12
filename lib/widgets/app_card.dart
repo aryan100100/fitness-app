@@ -26,19 +26,19 @@ class AppCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: padding ?? const EdgeInsets.all(16),
+        padding: padding ?? const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: backgroundColor ?? AppColors.cardSurface,
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
           border: Border.all(
-            color: isSelected ? AppColors.primaryAccent : AppColors.divider,
+            color: isSelected ? AppColors.primaryAccent : AppColors.subtleBorder,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),

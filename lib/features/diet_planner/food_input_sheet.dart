@@ -12,14 +12,14 @@ import '../../../models/food_search_result.dart';
 
 // Category chips shown before user starts typing
 const _categories = [
-  ('🥚', 'Eggs & Dairy'),
-  ('🍗', 'Meat & Fish'),
-  ('🌾', 'Grains & Bread'),
-  ('🥦', 'Vegetables'),
-  ('🍎', 'Fruits'),
-  ('🫘', 'Dal & Pulses'),
-  ('🥛', 'Beverages'),
-  ('🍪', 'Snacks'),
+  (Icons.egg_alt_outlined, 'Eggs & Dairy'),
+  (Icons.set_meal_outlined, 'Meat & Fish'),
+  (Icons.bakery_dining_outlined, 'Grains & Bread'),
+  (Icons.eco_outlined, 'Vegetables'),
+  (Icons.apple, 'Fruits'),
+  (Icons.rice_bowl_outlined, 'Dal & Pulses'),
+  (Icons.local_drink_outlined, 'Beverages'),
+  (Icons.cookie_outlined, 'Snacks'),
 ];
 
 enum _SheetState { idle, searching, results, noResults }
@@ -232,13 +232,20 @@ class _FoodInputSheetState extends State<FoodInputSheet> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: _categories.map((cat) {
-                    final (emoji, label) = cat;
+                    final (icon, label) = cat;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ActionChip(
-                        label: Text('$emoji $label',
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon, size: 14, color: Colors.white70),
+                            const SizedBox(width: 4),
+                            Text(label,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12)),
+                          ],
+                        ),
                         backgroundColor: const Color(0xFF2A2A2A),
                         side: const BorderSide(color: Colors.white12),
                         padding: EdgeInsets.zero,

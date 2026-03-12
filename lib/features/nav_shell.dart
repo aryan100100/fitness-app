@@ -1,6 +1,7 @@
 // [HEALTH APP] — Bottom Navigation Shell
 // Persistent 5-tab nav bar. Uses IndexedStack to preserve state across tabs.
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,7 +13,7 @@ import 'dashboard/dashboard_provider.dart';
 import 'diet_planner/diet_planner_screen.dart';
 import 'food_log/food_log_screen.dart';
 import 'profile/profile_screen.dart';
-import 'weight_log/weight_log_screen.dart';
+import 'workout/workout_screen.dart';
 
 class BottomNavShell extends StatefulWidget {
   final UserModel user;
@@ -73,6 +74,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
       create: (_) => DashboardProvider(),
       child: Scaffold(
         backgroundColor: AppColors.background,
+        extendBody: true, // Allow body content to flow under translucent nav bar
         body: IndexedStack(
           index: _currentIndex,
           children: [
@@ -82,61 +84,66 @@ class _BottomNavShellState extends State<BottomNavShell> {
             _PlaceholderTab(label: 'Food Log', icon: '🍽️'),
             // Tab 2 — AI Plan
             DietPlannerScreen(user: widget.user),
-            // Tab 3 — Weight Log
-            WeightLogScreen(user: widget.user),
+            // Tab 3 — Workouts
+            WorkoutScreen(user: widget.user),
             // Tab 4 — Profile
             ProfileScreen(user: widget.user),
           ],
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF111111),
-            border: Border(
-              top: BorderSide(color: AppColors.divider, width: 1),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SizedBox(
-              height: 60,
-              child: Row(
-                children: [
-                  _NavItem(
-                    icon: Icons.home_rounded,
-                    label: 'Home',
-                    index: 0,
-                    currentIndex: _currentIndex,
-                    onTap: _onTabTapped,
+        bottomNavigationBar: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.cardSurface.withValues(alpha: 0.75),
+                border: const Border(
+                  top: BorderSide(color: AppColors.subtleBorder, width: 0.5),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(
+                  height: 60,
+                  child: Row(
+                    children: [
+                      _NavItem(
+                        icon: Icons.home_rounded,
+                        label: 'Home',
+                        index: 0,
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                      _NavItem(
+                        icon: Icons.restaurant_rounded,
+                        label: 'Log',
+                        index: 1,
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                      _NavItem(
+                        icon: Icons.smart_toy_rounded,
+                        label: 'Plan',
+                        index: 2,
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                      _NavItem(
+                        icon: Icons.fitness_center_rounded,
+                        label: 'Workout',
+                        index: 3,
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                      _NavItem(
+                        icon: Icons.person_rounded,
+                        label: 'Profile',
+                        index: 4,
+                        currentIndex: _currentIndex,
+                        onTap: _onTabTapped,
+                      ),
+                    ],
                   ),
-                  _NavItem(
-                    icon: Icons.restaurant_rounded,
-                    label: 'Log',
-                    index: 1,
-                    currentIndex: _currentIndex,
-                    onTap: _onTabTapped,
-                  ),
-                  _NavItem(
-                    icon: Icons.smart_toy_rounded,
-                    label: 'Plan',
-                    index: 2,
-                    currentIndex: _currentIndex,
-                    onTap: _onTabTapped,
-                  ),
-                  _NavItem(
-                    icon: Icons.monitor_weight_rounded,
-                    label: 'Weight',
-                    index: 3,
-                    currentIndex: _currentIndex,
-                    onTap: _onTabTapped,
-                  ),
-                  _NavItem(
-                    icon: Icons.person_rounded,
-                    label: 'Profile',
-                    index: 4,
-                    currentIndex: _currentIndex,
-                    onTap: _onTabTapped,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -175,11 +182,15 @@ class _NavItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 24),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
               style: AppTextStyles.caption.copyWith(
-                  color: color, fontSize: 10),
+                  color: color, 
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  letterSpacing: 0,
+              ),
             ),
           ],
         ),

@@ -122,7 +122,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     count: _totalSteps,
                     effect: const ExpandingDotsEffect(
                       activeDotColor: AppColors.primaryAccent,
-                      dotColor: AppColors.divider,
+                      dotColor: AppColors.subtleBorder,
                       dotHeight: 8,
                       dotWidth: 8,
                       expansionFactor: 3,
