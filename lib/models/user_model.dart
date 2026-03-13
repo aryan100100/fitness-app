@@ -46,6 +46,12 @@ class UserModel {
   final bool lowPressureMode;
   final String weightUnit;                // 'kg' | 'lbs'
 
+  // Feature 8 additions
+  final int lowMotivationCount;
+  final String? lastLowMotivationUse;
+  final String? lastClinicalFlagShown;
+  final bool hideStreakCounter;
+
   const UserModel({
     this.id,
     required this.name,
@@ -83,6 +89,10 @@ class UserModel {
     this.checkinDay = 1,
     this.lowPressureMode = false,
     this.weightUnit = 'kg',
+    this.lowMotivationCount = 0,
+    this.lastLowMotivationUse,
+    this.lastClinicalFlagShown,
+    this.hideStreakCounter = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -125,6 +135,10 @@ class UserModel {
       checkinDay: (json['checkin_day'] as num?)?.toInt() ?? 1,
       lowPressureMode: json['low_pressure_mode'] as bool? ?? false,
       weightUnit: json['weight_unit'] as String? ?? 'kg',
+      lowMotivationCount: (json['low_motivation_count'] as num?)?.toInt() ?? 0,
+      lastLowMotivationUse: json['last_low_motivation_use'] as String?,
+      lastClinicalFlagShown: json['last_clinical_flag_shown'] as String?,
+      hideStreakCounter: json['hide_streak_counter'] as bool? ?? false,
     );
   }
 
@@ -165,6 +179,10 @@ class UserModel {
       'checkin_day': checkinDay,
       'low_pressure_mode': lowPressureMode,
       'weight_unit': weightUnit,
+      'low_motivation_count': lowMotivationCount,
+      if (lastLowMotivationUse != null) 'last_low_motivation_use': lastLowMotivationUse,
+      if (lastClinicalFlagShown != null) 'last_clinical_flag_shown': lastClinicalFlagShown,
+      'hide_streak_counter': hideStreakCounter,
     };
   }
 
@@ -204,6 +222,10 @@ class UserModel {
     int? checkinDay,
     bool? lowPressureMode,
     String? weightUnit,
+    int? lowMotivationCount,
+    String? lastLowMotivationUse,
+    String? lastClinicalFlagShown,
+    bool? hideStreakCounter,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -241,6 +263,10 @@ class UserModel {
       checkinDay: checkinDay ?? this.checkinDay,
       lowPressureMode: lowPressureMode ?? this.lowPressureMode,
       weightUnit: weightUnit ?? this.weightUnit,
+      lowMotivationCount: lowMotivationCount ?? this.lowMotivationCount,
+      lastLowMotivationUse: lastLowMotivationUse ?? this.lastLowMotivationUse,
+      lastClinicalFlagShown: lastClinicalFlagShown ?? this.lastClinicalFlagShown,
+      hideStreakCounter: hideStreakCounter ?? this.hideStreakCounter,
     );
   }
 }

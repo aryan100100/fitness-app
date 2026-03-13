@@ -23,7 +23,7 @@ Future<void> main() async {
     debugPrint('[MAIN] .env loaded OK');
     debugPrint('[MAIN] SUPABASE_URL = ${dotenv.env['SUPABASE_URL']}');
   } catch (e) {
-    debugPrint('[MAIN] WARNING: .env failed to load: $e');
+    debugPrint('[MAIN] WARNING: .env could not be loaded: $e');
     // Continue — Supabase will initialise with empty strings and fail gracefully
   }
 

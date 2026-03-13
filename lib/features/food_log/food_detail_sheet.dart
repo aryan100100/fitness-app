@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/utils/portion_references.dart';
+import '../../core/services/streak_service.dart';
 import '../../models/food_search_result.dart';
 import '../../models/user_model.dart';
 
@@ -144,6 +145,12 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
         'food_source':      widget.food.source.name,
         'is_photo_estimate': false,
       });
+
+      try {
+        await StreakService.instance.updateStreak(userId, today);
+      } catch (e) {
+        debugPrint('[STREAK] Error updating streak from detail log: $e');
+      }
 
       if (mounted) Navigator.of(context).pop();
     } catch (_) {

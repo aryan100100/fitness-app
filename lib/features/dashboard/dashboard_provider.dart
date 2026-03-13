@@ -3,23 +3,36 @@
 // Exposes refresh() and deleteFoodLog() for UI layer.
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/dashboard_summary.dart';
 import '../../models/food_log_model.dart';
-import '../../models/user_model.dart';
 import '../../core/services/dashboard_service.dart';
+import '../../core/constants/app_text_styles.dart';
+import '../../core/services/auto_adjustment_service.dart';
+import '../../core/services/streak_service.dart';
+import '../../core/services/low_motivation_service.dart';
+import '../../models/user_model.dart';
+import '../../models/streak_model.dart';
 
 class DashboardProvider extends ChangeNotifier {
   final DashboardService _service = DashboardService.instance;
 
   DashboardSummary? _summary;
   Map<String, List<FoodLogModel>> _mealLogs = {};
+  StreakModel? _streakModel;
+  List<DayStatus> _last7Days = [];
+  LowMotivationFlag _clinicalFlag = LowMotivationFlag.none;
+  bool _hideStreakCounter = false;
 
   bool _isLoading = false;
   String? _error;
 
-  // Getters
   DashboardSummary? get summary => _summary;
   Map<String, List<FoodLogModel>> get mealLogs => _mealLogs;
+  StreakModel? get streakModel => _streakModel;
+  List<DayStatus> get last7Days => _last7Days;
+  LowMotivationFlag get clinicalFlag => _clinicalFlag;
+  bool get hideStreakCounter => _hideStreakCounter;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -42,7 +55,9 @@ class DashboardProvider extends ChangeNotifier {
       final results = await Future.wait([
         _service.getTodaysTotals(userId, today),
         _service.getUserTargets(userId),
-        _service.getCurrentStreak(userId),
+        _service.getTodayOverride(userId, today),
+        StreakService.instance.getStreak(userId),
+        StreakService.instance.getLast7Days(userId),
         _service.getWeeklySummary(userId, user.targetCalories),
         _service.getMealLogs(userId, today, 'breakfast'),
         _service.getMealLogs(userId, today, 'lunch'),
@@ -54,19 +69,26 @@ class DashboardProvider extends ChangeNotifier {
               ? DateTime.tryParse(user.goalStartDate!)
               : null,
         ),
+        LowMotivationService.instance.checkClinicalFlag(user),
+        Supabase.instance.client.from('users').select('hide_streak_counter').eq('id', userId).single(),
       ]);
 
-      final totals  = results[0] as Map<String, double>;
-      final targets = results[1] as Map<String, double>;
-      final streak  = results[2] as int;
-      final weekly  = results[3] as Map<String, dynamic>;
-      final confMap = results[8] as Map<String, dynamic>;
+      final totals   = results[0] as Map<String, double>;
+      final targets  = results[1] as Map<String, double>;
+      final overrideType = results[2] as String?;
+      _streakModel   = results[3] as StreakModel;
+      _last7Days     = results[4] as List<DayStatus>;
+      final weekly   = results[5] as Map<String, dynamic>;
+      final confMap  = results[10] as Map<String, dynamic>;
+      _clinicalFlag  = results[11] as LowMotivationFlag;
+      final userRow  = results[12] as Map<String, dynamic>;
+      _hideStreakCounter = userRow['hide_streak_counter'] == true;
 
       _mealLogs = {
-        'breakfast': results[4] as List<FoodLogModel>,
-        'lunch':     results[5] as List<FoodLogModel>,
-        'dinner':    results[6] as List<FoodLogModel>,
-        'snack':     results[7] as List<FoodLogModel>,
+        'breakfast': results[6] as List<FoodLogModel>,
+        'lunch':     results[7] as List<FoodLogModel>,
+        'dinner':    results[8] as List<FoodLogModel>,
+        'snack':     results[9] as List<FoodLogModel>,
       };
 
       final heightM = user.heightCm / 100;
@@ -83,7 +105,7 @@ class DashboardProvider extends ChangeNotifier {
         targetCarbs:    targets['targetCarbs']!,
         targetFat:      targets['targetFat']!,
         targetFibre:    targets['targetFibre']!,
-        currentStreak:  streak,
+        currentStreak:  _streakModel!.currentStreak,
         weeklyCaloriesLogged: (weekly['weeklyCaloriesLogged'] as double),
         weeklyCaloriesTarget: (weekly['weeklyCaloriesTarget'] as double),
         weeklyDaysLogged:     (weekly['weeklyDaysLogged'] as int),
@@ -92,10 +114,10 @@ class DashboardProvider extends ChangeNotifier {
         userName: user.name,
         bmi: bmi,
         goal: user.goal,
+        isMinimumViableDay: overrideType == 'minimum_viable_day',
       );
 
-      // Update streak silently after refresh
-      _service.updateStreak(userId).ignore();
+      // Streak update has been decoupled from page load to food log save event.
     } catch (e) {
       _error = 'Could not load your data. Pull down to try again.';
     } finally {
@@ -146,6 +168,7 @@ class DashboardProvider extends ChangeNotifier {
         userName: _summary!.userName,
         bmi: _summary!.bmi,
         goal: _summary!.goal,
+        isMinimumViableDay: _summary!.isMinimumViableDay,
       );
     }
     notifyListeners();

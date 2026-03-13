@@ -13,13 +13,13 @@ class TDEERecalibrationService {
 
   // ---------------------------------------------------------------------------
   // Main entry point — call from DashboardScreen.initState()
-  // All logic is wrapped in a top-level try/catch. Silent failure guaranteed.
+  // All logic is wrapped in a top-level try/catch. Silent error handling guaranteed.
   // ---------------------------------------------------------------------------
   Future<void> checkAndRecalibrate(String userId) async {
     try {
       await _runRecalibration(userId);
     } catch (_) {
-      // Silent failure — user experience is never disrupted
+      // Silent error — user experience is never disrupted
     }
   }
 

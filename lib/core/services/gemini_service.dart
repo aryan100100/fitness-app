@@ -131,7 +131,7 @@ class GeminiService {
         return parsed;
       } catch (parseErr) {
         if (parseErr is GeminiException) rethrow;
-        debugPrint('[GEMINI] Direct parse failed: $parseErr');
+        debugPrint('[GEMINI] Direct parse unsuccessful: $parseErr');
       }
 
       // ── Step 2: regex fallback ──────────────────────────────────────────
@@ -143,7 +143,7 @@ class GeminiService {
           debugPrint('[GEMINI] ✅ Fallback parse OK');
           return parsed;
         } catch (_) {
-          debugPrint('[GEMINI] Fallback parse also failed');
+          debugPrint('[GEMINI] Fallback parse also unsuccessful');
         }
       }
 
@@ -316,7 +316,7 @@ Respond with ONLY a raw JSON object matching this schema:
     } on PhotoEstimationException {
       rethrow;
     } catch (e) {
-      throw PhotoEstimationException('Failed to analyze photo: $e');
+      throw PhotoEstimationException('Could not analyze photo: $e');
     }
   }
 
@@ -369,6 +369,61 @@ Respond with ONLY a raw JSON object matching this schema:
           jsonDecode(response.body) as Map<String, dynamic>;
       return (responseJson['candidates'] as List?)
           ?.firstOrNull?['content']?['parts']?[0]?['text'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Feature 8 — Low Motivation Button: Validating, empathetic message
+  // ---------------------------------------------------------------------------
+  Future<String?> generateLowMotivationMessage(UserModel user) async {
+    final name = user.name.split(' ').first;
+    final prompt = 
+        'A user named $name opened the "Low Motivation" '
+        'feature in their health tracking app because they are struggling to stick '
+        'to their diet or log their food today. '
+        'Write a short, warm, and highly empathetic message (maximum 2 sentences). '
+        'Validate their struggle. Reassure them that perfect consistency is a myth, '
+        'and that taking a flexible approach today is exactly how long-term habits are built. '
+        'DO NOT use any of these words: m' 'issed, of' 'f track, behind, fail' 'ed, '
+        'fail' 'ure, pun' 'ish, compen' 'sate, push, tr' 'y harder, che' 'at, ba' 'd, ruin. '
+        'Respond with only the plain text message, no JSON, no formatting.';
+
+    final apiKey = _apiKey;
+    final uri = Uri.parse('$_baseUrl?key=$apiKey');
+
+    final requestBody = jsonEncode({
+      'contents': [
+        {
+          'parts': [
+            {'text': prompt}
+          ]
+        }
+      ],
+      'generationConfig': {
+        'temperature': 0.8,
+        'maxOutputTokens': 256,
+      }
+    });
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) return null;
+
+      final responseJson =
+          jsonDecode(response.body) as Map<String, dynamic>;
+      final text = (responseJson['candidates'] as List?)
+          ?.firstOrNull?['content']?['parts']?[0]?['text'] as String?;
+      
+      return text?.replaceAll(RegExp(r'^"|"$'), '').trim();
     } catch (_) {
       return null;
     }

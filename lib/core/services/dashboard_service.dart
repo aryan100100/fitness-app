@@ -1,6 +1,6 @@
 // [HEALTH APP] — Dashboard Service
 // All data queries for the dashboard. Each method has its own try/catch
-// so a single failure never blocks the rest of the screen from loading.
+// so a single error never blocks the rest of the screen from loading.
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/dashboard_summary.dart';
@@ -113,62 +113,23 @@ class DashboardService {
   }
 
   // ---------------------------------------------------------------------------
-  // Streak — returns 0 gracefully if row not found
+  // Streak management moved to StreakService (Feature 8)
   // ---------------------------------------------------------------------------
-  Future<int> getCurrentStreak(String userId) async {
+
+  // ---------------------------------------------------------------------------
+  // Dashboard Overrides (Feature 8)
+  // ---------------------------------------------------------------------------
+  Future<String?> getTodayOverride(String userId, String date) async {
     try {
       final data = await _client
-          .from('streaks')
-          .select('current_streak')
+          .from('day_overrides')
+          .select('override_type')
           .eq('user_id', userId)
+          .eq('override_date', date)
           .maybeSingle();
-      return (data?['current_streak'] as int?) ?? 0;
+      return data?['override_type'] as String?;
     } catch (_) {
-      return 0;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Update streak with soft grace-day logic
-  // ---------------------------------------------------------------------------
-  Future<void> updateStreak(String userId) async {
-    try {
-      final today = DateTime.now();
-      final todayStr = _dateStr(today);
-      final yesterdayStr = _dateStr(today.subtract(const Duration(days: 1)));
-      final twoDaysAgoStr =
-          _dateStr(today.subtract(const Duration(days: 2)));
-
-      final existing = await _client
-          .from('streaks')
-          .select('current_streak, last_log_date')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      int newStreak = 1;
-      if (existing != null) {
-        final lastLog = existing['last_log_date'] as String?;
-        final current = (existing['current_streak'] as int?) ?? 0;
-
-        if (lastLog == todayStr) {
-          return; // Already updated today
-        } else if (lastLog == yesterdayStr) {
-          newStreak = current + 1; // Consecutive day
-        } else if (lastLog == twoDaysAgoStr) {
-          newStreak = current + 1; // Grace day — soft streak continues
-        } else {
-          newStreak = 1; // Gap too large — reset
-        }
-      }
-
-      await _client.from('streaks').upsert({
-        'user_id': userId,
-        'current_streak': newStreak,
-        'last_log_date': todayStr,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-    } catch (_) {
-      // Never crash the dashboard over a streak update
+      return null;
     }
   }
 

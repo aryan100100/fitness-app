@@ -401,7 +401,7 @@ class _MealPlanTabState extends State<MealPlanTab>
               color: Colors.white24, size: 48),
           const SizedBox(height: 12),
           const Text(
-            'Generation failed — tap to retry',
+            'Unable to generate — tap to retry',
             style: TextStyle(color: Colors.white38, fontSize: 14),
           ),
           const SizedBox(height: 16),

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/streak_service.dart';
 import '../../models/user_model.dart';
 
 class ManualEntryScreen extends StatefulWidget {
@@ -102,6 +103,12 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
         'fibre_per_100g':    fibre,
         'source':            'manual',
       }).ignore(); // Fire and forget — don't block on this
+
+      try {
+        await StreakService.instance.updateStreak(userId, today);
+      } catch (e) {
+        debugPrint('[STREAK] Error updating streak from manual log: $e');
+      }
 
       if (mounted) Navigator.of(context).pop();
     } catch (_) {

@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/services/gemini_service.dart';
+import '../../core/services/streak_service.dart';
 import '../../models/user_model.dart';
 
 class PhotoEstimatorScreen extends StatefulWidget {
@@ -179,6 +180,12 @@ class _PhotoEstimatorScreenState extends State<PhotoEstimatorScreen>
         'food_source':      'photo_estimate',
         'is_photo_estimate': true,
       });
+
+      try {
+        await StreakService.instance.updateStreak(userId, today);
+      } catch (e) {
+        debugPrint('[STREAK] Error updating streak from photo log: $e');
+      }
 
       if (mounted) Navigator.of(context).pop();
     } catch (_) {

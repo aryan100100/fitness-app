@@ -6,16 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/services/auto_adjustment_service.dart';
+import '../../core/services/low_motivation_service.dart';
+import '../../core/services/streak_service.dart';
 import '../../models/user_model.dart';
 import '../../widgets/app_card.dart';
 import '../emergency/emergency_button_sheet.dart';
+import '../low_motivation/low_motivation_sheet.dart';
 import '../weight_log/weight_log_screen.dart';
+import '../streaks/streak_widget.dart';
+import '../streaks/streak_milestone_card.dart';
+import '../streaks/streak_reset_card.dart';
 import 'dashboard_provider.dart';
 import 'widgets/adjustment_card.dart';
 import 'widgets/calorie_ring.dart';
@@ -41,15 +49,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _showAdjustedBanner = false;
   AdjustmentSituation? _activeSituation;
 
+  int _shownMilestone = 0;
+  String? _shownResetDate;
+
   @override
   void initState() {
     super.initState();
+    _loadLocalFlags();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardProvider>().refresh(widget.user).then((_) {
         _checkNudge();
         _checkSituations();
       });
     });
+  }
+
+  Future<void> _loadLocalFlags() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _shownMilestone = prefs.getInt('last_milestone_${widget.user.id}') ?? 0;
+        _shownResetDate = prefs.getString('streak_reset_${widget.user.id}');
+      });
+    }
   }
 
   void _checkSituations() {
@@ -245,25 +267,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: AppColors.primaryAccent,
                                     width: 1.5),
                               ),
-                              child: Center(
-                                child: Text(
-                                  widget.user.name.isNotEmpty
-                                      ? widget.user.name[0].toUpperCase()
-                                      : '?',
-                                  style: AppTextStyles.body.copyWith(
-                                      color: AppColors.primaryAccent,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
+                              child: const Icon(Icons.person,
+                                  color: AppColors.primaryAccent),
                             ),
                           ],
                         ),
 
+                        const SizedBox(height: 16),
+
+                        if (provider.clinicalFlag == LowMotivationFlag.clinical)
+                          _ClinicalFlagCard(
+                            user: widget.user,
+                            onDismiss: () {
+                              context.read<DashboardProvider>().refresh(widget.user);
+                            },
+                          )
+                        else if (_activeSituation != null)
+                          _buildSituationCard(_activeSituation!, provider),
+
                         const SizedBox(height: 12),
 
-                        // ── Streak badge ─────────────────────────────────────
-                        if (s != null)
-                          _StreakBadge(streak: s.currentStreak),
+                        // ── Streak badge & Cards ─────────────────────────────
+                        if (provider.streakModel != null && !provider.hideStreakCounter) ...[
+                          StreakWidget(
+                            streak: provider.streakModel!,
+                            last7Days: provider.last7Days,
+                          ),
+                          
+                          // Milestone celebration
+                          if (provider.streakModel!.currentStreak > 0 &&
+                              StreakService.instance.shouldShowMilestone(provider.streakModel!.currentStreak) &&
+                              provider.streakModel!.currentStreak > _shownMilestone)
+                            StreakMilestoneCard(
+                              streakDays: provider.streakModel!.currentStreak,
+                              onDismiss: () async {
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setInt('last_milestone_${widget.user.id}', provider.streakModel!.currentStreak);
+                                setState(() => _shownMilestone = provider.streakModel!.currentStreak);
+                              },
+                            ),
+
+                          // Streak Reset Fresh Start
+                          if (provider.streakModel!.currentStreak == 0 &&
+                              provider.streakModel!.longestStreak > 0 &&
+                              _shownResetDate != DateFormat('yyyy-MM-dd').format(DateTime.now()))
+                            StreakResetCard(
+                              onDismiss: () async {
+                                final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setString('streak_reset_${widget.user.id}', today);
+                                setState(() => _shownResetDate = today);
+                              },
+                            ),
+                        ],
 
                         const SizedBox(height: 16),
 
@@ -313,26 +369,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
 
                           // Overage soft message
-                          if (s.isOver) ...[
+                          if (s.isOver && !s.isMinimumViableDay) ...[
                             const SizedBox(height: 8),
                             _OverageMessage(),
                           ],
 
                           const SizedBox(height: 12),
+                          Center(child: _LowMotivationButton(user: widget.user)),
+                          const SizedBox(height: 12),
 
                           // ── Macro bar card ──────────────────────────────
-                          MacroBarCard(
-                            protein: s.totalProtein,
-                            carbs: s.totalCarbs,
-                            fat: s.totalFat,
-                            fibre: s.totalFibre,
-                            targetProtein: s.targetProtein,
-                            targetCarbs: s.targetCarbs,
-                            targetFat: s.targetFat,
-                            targetFibre: s.targetFibre,
-                          ),
-
-                          const SizedBox(height: 12),
+                          if (!s.isMinimumViableDay) ...[
+                            MacroBarCard(
+                              protein: s.totalProtein,
+                              carbs: s.totalCarbs,
+                              fat: s.totalFat,
+                              fibre: s.totalFibre,
+                              targetProtein: s.targetProtein,
+                              targetCarbs: s.targetCarbs,
+                              targetFat: s.targetFat,
+                              targetFibre: s.targetFibre,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
 
                           // ── TDEE confidence card ────────────────────────
                           TDEEConfidenceCard(
@@ -420,50 +479,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Streak badge
-// ---------------------------------------------------------------------------
-class _StreakBadge extends StatelessWidget {
-  final int streak;
-  const _StreakBadge({required this.streak});
-
-  @override
-  Widget build(BuildContext context) {
-    if (streak > 0) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.primaryAccent.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: AppColors.primaryAccent.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('🔥', style: TextStyle(fontSize: 14)),
-            const SizedBox(width: 4),
-            Text(
-              '$streak day streak',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.primaryAccent,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return Row(
-      children: [
-        const Text('🌱', style: TextStyle(fontSize: 14)),
-        const SizedBox(width: 6),
-        Text('Log today to start your streak',
-            style: AppTextStyles.caption),
-      ],
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Overage soft message (non-punitive)
@@ -728,7 +743,7 @@ class _EmergencyButtonState extends State<_EmergencyButton>
               Icon(Icons.bolt, color: textColor, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Off Track Today? Emergency Adjust',
+                'Tough Day? Emergency Adjust',
                 style: AppTextStyles.body.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w600,
@@ -862,6 +877,146 @@ class _FoodLogPlaceholder extends StatelessWidget {
           'Food Log — coming next in Phase 3',
           style: AppTextStyles.bodySecondary,
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Low Motivation Button
+// ---------------------------------------------------------------------------
+class _LowMotivationButton extends StatelessWidget {
+  final UserModel user;
+  const _LowMotivationButton({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => LowMotivationSheet(user: user),
+        ).then((changed) {
+          if (changed == true) {
+            context.read<DashboardProvider>().refresh(user);
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.battery_1_bar_rounded, size: 16, color: AppColors.secondaryText),
+            const SizedBox(width: 8),
+            Text('Low Motivation?', style: AppTextStyles.caption),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Minimum Viable Day Header
+// ---------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------
+// Clinical Flag Card
+// ---------------------------------------------------------------------------
+class _ClinicalFlagCard extends StatelessWidget {
+  final UserModel user;
+  final VoidCallback onDismiss;
+
+  const _ClinicalFlagCard({
+    required this.user,
+    required this.onDismiss,
+  });
+
+  Future<void> _launchSupportUrl() async {
+    const urlStr = 'https://www.iCall.iitb.ac.in';
+    final url = Uri.parse(urlStr);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
+  void _handleDismiss() async {
+    await LowMotivationService.instance.markClinicalFlagShown(user.id ?? '');
+    onDismiss();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFB300), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  "We've noticed you've been having a lot of tough days. 💙",
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _handleDismiss,
+                child: const Icon(Icons.close, size: 20, color: AppColors.secondaryText),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "This app can help with nutrition, but it can't replace human support. If things feel really hard right now, please consider talking to someone.",
+            style: AppTextStyles.bodySecondary.copyWith(height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                _launchSupportUrl();
+                _handleDismiss();
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB300).withOpacity(0.1),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Find support',
+                style: AppTextStyles.caption.copyWith(
+                  color: const Color(0xFFFFB300),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
