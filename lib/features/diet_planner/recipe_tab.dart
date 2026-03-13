@@ -288,7 +288,7 @@ class _RecipeTabState extends State<RecipeTab>
                       color: Colors.white38, size: 40),
                   const SizedBox(height: 10),
                   const Text(
-                    'Generation failed — tap ✨ Get Recipe to retry',
+                    'Unable to generate — tap ✨ Get Recipe to retry',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white38, fontSize: 13),
                   ),

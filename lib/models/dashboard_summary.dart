@@ -39,6 +39,9 @@ class DashboardSummary {
   final double? recalibratedTargetCalories;
   final bool hasNewCalibration;
 
+  // Low motivation feature
+  final bool isMinimumViableDay;
+
   const DashboardSummary({
     this.totalCalories = 0,
     this.totalProtein = 0,
@@ -61,6 +64,7 @@ class DashboardSummary {
     required this.goal,
     this.recalibratedTargetCalories,
     this.hasNewCalibration = false,
+    this.isMinimumViableDay = false,
   });
 
   factory DashboardSummary.fromJson(Map<String, dynamic> json) {

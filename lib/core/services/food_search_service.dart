@@ -5,7 +5,7 @@
 //   Tier 2 — Nutritionix (branded + restaurant foods)
 //   Tier 3 — Open Food Facts (international fallback, community data)
 //   Local  — Indian foods JSON (offline, instant)
-// Each tier has independent try/catch — one failure never blocks others.
+// Each tier has independent try/catch — one error never blocks others.
 
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;

@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/services/food_search_service.dart';
+import '../../core/services/streak_service.dart';
 import '../../models/food_log_model.dart';
 import '../../models/food_search_result.dart';
 import '../../models/user_model.dart';
@@ -140,6 +141,12 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
       'food_source': usual.foodSource,
       'is_photo_estimate': false,
     });
+
+    try {
+      await StreakService.instance.updateStreak(userId, today);
+    } catch (e) {
+      debugPrint('[STREAK] Error updating streak from usual log: $e');
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

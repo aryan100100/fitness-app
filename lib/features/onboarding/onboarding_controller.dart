@@ -95,7 +95,7 @@ class OnboardingController extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Save the full NutritionPlan to Supabase. Returns UserModel on success, null on failure.
+  // Save the full NutritionPlan to Supabase. Returns UserModel on success, null on error.
   // Called by ResultsScreen on "Let's Start →" tap.
   //
   // Auth strategy: anonymous sign-in via Supabase.
@@ -166,7 +166,7 @@ class OnboardingController extends ChangeNotifier {
       // -----------------------------------------------------------------------
       final verified = await SupabaseService.instance.verifyUserExists(uid);
       if (!verified) {
-        throw Exception('Row verification failed — upsert appeared to succeed '
+        throw Exception('Row verification unsuccessful — upsert appeared to succeed '
             'but the row could not be read back. Check RLS SELECT policy.');
       }
 
@@ -227,7 +227,7 @@ class OnboardingController extends ChangeNotifier {
       if (user == null) throw AuthException('signInAnonymously returned null user');
       return user;
     } on AuthException catch (e) {
-      debugPrint('[AUTH] First attempt failed: ${e.message}. Retrying in 2s...');
+      debugPrint('[AUTH] First attempt unsuccessful: ${e.message}. Retrying in 2s...');
       await Future.delayed(const Duration(seconds: 2));
       final response = await client.auth.signInAnonymously();
       final user = response.user;

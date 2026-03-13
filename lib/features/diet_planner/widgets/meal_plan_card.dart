@@ -46,7 +46,7 @@ class _MealPlanCardState extends State<MealPlanCard> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to log meal: $e',
+          content: Text('Could not log meal: $e',
               style: const TextStyle(color: Colors.white, fontSize: 12)),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
