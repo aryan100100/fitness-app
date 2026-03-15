@@ -52,6 +52,14 @@ class UserModel {
   final String? lastClinicalFlagShown;
   final bool hideStreakCounter;
 
+  // Feature 9 additions — Progress Photos
+  final bool progressPhotosEnabled;
+  final bool progressPhotoReminderEnabled;
+  final int progressPhotoReminderIntervalDays;
+  final String? lastProgressPhotoReminder;
+  final int progressPhotosComparisonStreak;
+  final String? lastComparisonDate;
+
   const UserModel({
     this.id,
     required this.name,
@@ -93,6 +101,12 @@ class UserModel {
     this.lastLowMotivationUse,
     this.lastClinicalFlagShown,
     this.hideStreakCounter = false,
+    this.progressPhotosEnabled = false,
+    this.progressPhotoReminderEnabled = false,
+    this.progressPhotoReminderIntervalDays = 14,
+    this.lastProgressPhotoReminder,
+    this.progressPhotosComparisonStreak = 0,
+    this.lastComparisonDate,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -139,6 +153,12 @@ class UserModel {
       lastLowMotivationUse: json['last_low_motivation_use'] as String?,
       lastClinicalFlagShown: json['last_clinical_flag_shown'] as String?,
       hideStreakCounter: json['hide_streak_counter'] as bool? ?? false,
+      progressPhotosEnabled: json['progress_photos_enabled'] as bool? ?? false,
+      progressPhotoReminderEnabled: json['progress_photo_reminder_enabled'] as bool? ?? false,
+      progressPhotoReminderIntervalDays: (json['progress_photo_reminder_interval_days'] as num?)?.toInt() ?? 14,
+      lastProgressPhotoReminder: json['last_progress_photo_reminder'] as String?,
+      progressPhotosComparisonStreak: (json['progress_photos_comparison_streak'] as num?)?.toInt() ?? 0,
+      lastComparisonDate: json['last_comparison_date'] as String?,
     );
   }
 
@@ -183,6 +203,12 @@ class UserModel {
       if (lastLowMotivationUse != null) 'last_low_motivation_use': lastLowMotivationUse,
       if (lastClinicalFlagShown != null) 'last_clinical_flag_shown': lastClinicalFlagShown,
       'hide_streak_counter': hideStreakCounter,
+      'progress_photos_enabled': progressPhotosEnabled,
+      'progress_photo_reminder_enabled': progressPhotoReminderEnabled,
+      'progress_photo_reminder_interval_days': progressPhotoReminderIntervalDays,
+      if (lastProgressPhotoReminder != null) 'last_progress_photo_reminder': lastProgressPhotoReminder,
+      'progress_photos_comparison_streak': progressPhotosComparisonStreak,
+      if (lastComparisonDate != null) 'last_comparison_date': lastComparisonDate,
     };
   }
 
@@ -226,6 +252,12 @@ class UserModel {
     String? lastLowMotivationUse,
     String? lastClinicalFlagShown,
     bool? hideStreakCounter,
+    bool? progressPhotosEnabled,
+    bool? progressPhotoReminderEnabled,
+    int? progressPhotoReminderIntervalDays,
+    String? lastProgressPhotoReminder,
+    int? progressPhotosComparisonStreak,
+    String? lastComparisonDate,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -267,6 +299,12 @@ class UserModel {
       lastLowMotivationUse: lastLowMotivationUse ?? this.lastLowMotivationUse,
       lastClinicalFlagShown: lastClinicalFlagShown ?? this.lastClinicalFlagShown,
       hideStreakCounter: hideStreakCounter ?? this.hideStreakCounter,
+      progressPhotosEnabled: progressPhotosEnabled ?? this.progressPhotosEnabled,
+      progressPhotoReminderEnabled: progressPhotoReminderEnabled ?? this.progressPhotoReminderEnabled,
+      progressPhotoReminderIntervalDays: progressPhotoReminderIntervalDays ?? this.progressPhotoReminderIntervalDays,
+      lastProgressPhotoReminder: lastProgressPhotoReminder ?? this.lastProgressPhotoReminder,
+      progressPhotosComparisonStreak: progressPhotosComparisonStreak ?? this.progressPhotosComparisonStreak,
+      lastComparisonDate: lastComparisonDate ?? this.lastComparisonDate,
     );
   }
 }
