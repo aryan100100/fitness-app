@@ -53,6 +53,9 @@ dependencies:
   # cached_network_image: cache food images from API responses
   cached_network_image: ^3.4.1
 
+  # Feature 10: Barcode scanning via ML Kit (on-device, no data leaves device)
+  mobile_scanner: ^5.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -67,3 +70,5 @@ flutter:
     - .env
     # Local Indian foods database — works fully offline
     - assets/indian_foods.json
+    # Feature 10: Curated Indian packaged foods with barcodes
+    - assets/indian_packaged_foods.json

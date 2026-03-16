@@ -16,6 +16,7 @@ import '../../models/user_model.dart';
 import 'food_detail_sheet.dart';
 import 'manual_entry_screen.dart';
 import 'photo_estimator_screen.dart';
+import 'barcode_scanner_screen.dart';
 
 class FoodLogScreen extends StatefulWidget {
   final String mealType;
@@ -211,7 +212,18 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                           ),
                         ),
                       )
-                    : null,
+                    : IconButton(
+                        icon: const Icon(Icons.qr_code_scanner,
+                            color: AppColors.secondaryText),
+                        tooltip: 'Scan barcode',
+                        onPressed: () => Navigator.of(context)
+                            .push(MaterialPageRoute(
+                              builder: (_) => BarcodeScannerScreen(
+                                  mealType: widget.mealType,
+                                  user: widget.user),
+                            ))
+                            .then((_) => Navigator.of(context).pop()),
+                      ),
                 filled: true,
                 fillColor: AppColors.cardSurface,
                 border: OutlineInputBorder(
@@ -286,6 +298,22 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
           ),
         ],
       ),
+      // Barcode scan FAB — hidden when low pressure mode is active
+      floatingActionButton: widget.user.lowPressureMode == true
+          ? null
+          : FloatingActionButton(
+              heroTag: 'barcode_fab',
+              backgroundColor: AppColors.primaryAccent,
+              foregroundColor: Colors.black,
+              tooltip: 'Scan barcode',
+              onPressed: () => Navigator.of(context)
+                  .push(MaterialPageRoute(
+                    builder: (_) => BarcodeScannerScreen(
+                        mealType: widget.mealType, user: widget.user),
+                  ))
+                  .then((_) => Navigator.of(context).pop()),
+              child: const Icon(Icons.qr_code_scanner, size: 26),
+            ),
     );
   }
 }
@@ -375,9 +403,19 @@ class _InitialContent extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(log.foodName,
-                                style: AppTextStyles.body
-                                    .copyWith(fontSize: 15)),
+                            Row(children: [
+                              Flexible(
+                                child: Text(log.foodName,
+                                    style: AppTextStyles.body
+                                        .copyWith(fontSize: 15))),
+                              // Barcode indicator for scanned foods
+                              if (log.foodSource == 'barcode_scan') ...[  
+                                const SizedBox(width: 6),
+                                const Icon(Icons.qr_code,
+                                    size: 13,
+                                    color: AppColors.secondaryText),
+                              ],
+                            ]),
                             const SizedBox(height: 2),
                             Text('${log.quantityG.round()}g',
                                 style: AppTextStyles.caption),
