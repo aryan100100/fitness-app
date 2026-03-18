@@ -269,7 +269,7 @@ class _DevProfileScreenState extends State<DevProfileScreen> {
                   ),
                   value: _hideStreakCounter,
                   onChanged: _toggleHideStreak,
-                  activeColor: AppColors.primaryAccent,
+                  activeThumbColor: AppColors.primaryAccent,
                   contentPadding: EdgeInsets.zero,
                 ),
 
@@ -330,7 +330,7 @@ class _DevProfileScreenState extends State<DevProfileScreen> {
                               .copyWith(color: AppColors.secondaryText)),
                       value: _progressPhotosEnabled,
                       onChanged: _toggleProgressPhotos,
-                      activeColor: AppColors.primaryAccent,
+                      activeThumbColor: AppColors.primaryAccent,
                       contentPadding: EdgeInsets.zero,
                     ),
                     SwitchListTile(
@@ -340,7 +340,7 @@ class _DevProfileScreenState extends State<DevProfileScreen> {
                               .copyWith(color: AppColors.secondaryText)),
                       value: _reminderEnabled,
                       onChanged: _toggleReminder,
-                      activeColor: AppColors.primaryAccent,
+                      activeThumbColor: AppColors.primaryAccent,
                       contentPadding: EdgeInsets.zero,
                     ),
                     if (_reminderEnabled) ...[

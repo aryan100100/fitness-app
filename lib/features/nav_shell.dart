@@ -13,7 +13,7 @@ import 'dashboard/dashboard_provider.dart';
 import 'diet_planner/diet_planner_screen.dart';
 import 'food_log/food_log_screen.dart';
 import 'profile/profile_screen.dart';
-import 'workout/workout_screen.dart';
+import 'workout/workout_hub_screen.dart';
 
 class BottomNavShell extends StatefulWidget {
   final UserModel user;
@@ -50,6 +50,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
           ),
         ),
       ).then((_) {
+        if (!mounted) return;
         // Refresh dashboard after logging
         final provider = context.read<DashboardProvider>();
         provider.refresh(widget.user);
@@ -85,7 +86,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
             // Tab 2 — AI Plan
             DietPlannerScreen(user: widget.user),
             // Tab 3 — Workouts
-            WorkoutScreen(user: widget.user),
+            const WorkoutHubScreen(),
             // Tab 4 — Profile
             ProfileScreen(user: widget.user),
           ],

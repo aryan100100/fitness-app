@@ -29,7 +29,7 @@ class WeightLogService {
         'weight_kg': weightKg,
         'logged_at': _dateStr(loggedAt),
         'is_menstrual_phase': isMenstrual,
-        if (note != null) 'note': note,
+        'note': ?note,
       }, onConflict: 'user_id,logged_at');
       debugPrint('[WEIGHT] Saved $weightKg kg for $userId on ${_dateStr(loggedAt)}');
     } catch (e) {

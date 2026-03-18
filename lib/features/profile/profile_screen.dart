@@ -1,4 +1,4 @@
-﻿// [HEALTH APP] â€” Profile & Settings Screen
+// [HEALTH APP] â€” Profile & Settings Screen
 // Full profile screen replacing the dev-only placeholder.
 // Shows user info summary, settings toggles, and account actions.
 // CHANGELOG: Replaces dev_profile_screen.dart with full profile settings.
@@ -91,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Could not save â€” check your connection'),
+            content: const Text('Could not save — check your connection'),
             backgroundColor: AppColors.destructive,
           ),
         );
@@ -260,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // ---- App version ----
                   Center(
                     child: Text(
-                      'v1.0.0  Â·  Built with ðŸ©º',
+                      'v1.0.0  ·  Built with ❤️',
                       style: AppTextStyles.caption.copyWith(fontSize: 11),
                     ),
                   ),
@@ -332,14 +332,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(_user.name, style: AppTextStyles.headingMedium.copyWith(fontSize: 18)),
                 const SizedBox(height: 4),
                 Text(
-                  '$_goalLabel  â€¢  ${_user.age}y  â€¢  $_activityLabel',
+                  '$_goalLabel  •  ${_user.age}y  •  $_activityLabel',
                   style: AppTextStyles.caption,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_formatWeight(_user.weightKg)}  â€¢  ${_user.heightCm.toStringAsFixed(0)} cm',
+                  '${_formatWeight(_user.weightKg)}  •  ${_user.heightCm.toStringAsFixed(0)} cm',
                   style: AppTextStyles.caption,
                 ),
               ],
@@ -471,7 +471,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primaryAccent,
+            activeThumbColor: AppColors.primaryAccent,
           ),
         ],
       ),

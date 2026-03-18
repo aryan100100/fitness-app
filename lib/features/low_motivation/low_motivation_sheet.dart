@@ -196,9 +196,9 @@ class _LowMotivationSheetState extends State<LowMotivationSheet> {
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -221,9 +221,9 @@ class _LowMotivationSheetState extends State<LowMotivationSheet> {
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: AppColors.destructive.withOpacity(0.1),
+                color: AppColors.destructive.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -260,7 +260,7 @@ class _LowMotivationSheetState extends State<LowMotivationSheet> {
           Opacity(
             opacity: (isStrongFlag || !_canUseMaintenance) ? 0.4 : 1.0,
             child: LowMotivationOptionCard(
-              title: 'Maintenance Day' + (!_canUseMaintenance && !isStrongFlag ? ' (Limit Reached)' : ''),
+              title: 'Maintenance Day${!_canUseMaintenance && !isStrongFlag ? ' (Limit Reached)' : ''}',
               description: 'Eat up to your maintenance calories (${widget.user.tdee.round()} kcal). Still a win for the long-term.',
               icon: Icons.pause_circle_outline,
               onTap: (isStrongFlag || !_canUseMaintenance) ? () {} : _handleOptionB,

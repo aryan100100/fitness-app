@@ -478,7 +478,7 @@ class _DatePickerDialog extends StatelessWidget {
         child: ListView.separated(
           shrinkWrap: true,
           itemCount: availableDates.length,
-          separatorBuilder: (_, __) =>
+          separatorBuilder: (_, _) =>
               const Divider(color: AppColors.divider, height: 1),
           itemBuilder: (_, i) {
             final d = availableDates[i];

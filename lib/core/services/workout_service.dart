@@ -1,6 +1,7 @@
 // [HEALTH APP] — Workout Service
 // Supabase CRUD for workouts and exercise sets.
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/workout_model.dart';
 import '../../models/exercise_set_model.dart';
@@ -25,6 +26,7 @@ class WorkoutService {
           .single();
       return WorkoutModel.fromJson(res);
     } catch (e) {
+      debugPrint('[WORKOUT_SERVICE] createWorkout error: $e');
       return null;
     }
   }
@@ -164,6 +166,42 @@ class WorkoutService {
       return total;
     } catch (_) {
       return 0;
+    }
+  }
+
+  /// Fetch the most recent session's sets for a given exercise name.
+  /// Used for "previous performance" display and overload suggestions.
+  Future<List<ExerciseSetModel>> getLastSessionForExercise({
+    required String userId,
+    required String exerciseName,
+  }) async {
+    try {
+      // Find the most recent workout containing this exercise
+      final workoutResult = await _client
+          .from('exercise_sets')
+          .select('workout_id, workouts!inner(user_id, date)')
+          .eq('exercise_name', exerciseName)
+          .eq('workouts.user_id', userId)
+          .order('workouts(date)', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (workoutResult == null) return [];
+
+      final workoutId = workoutResult['workout_id'] as String;
+
+      final setsResult = await _client
+          .from('exercise_sets')
+          .select()
+          .eq('workout_id', workoutId)
+          .eq('exercise_name', exerciseName)
+          .order('set_number');
+
+      return (setsResult as List)
+          .map((row) => ExerciseSetModel.fromJson(row))
+          .toList();
+    } catch (_) {
+      return [];
     }
   }
 

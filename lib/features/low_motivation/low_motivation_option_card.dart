@@ -26,12 +26,12 @@ class LowMotivationOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bgColor = isPrimary 
-        ? AppColors.primaryAccent.withOpacity(0.15)
-        : (isDestructive ? AppColors.destructive.withOpacity(0.1) : AppColors.cardSurface);
+        ? AppColors.primaryAccent.withValues(alpha: 0.15)
+        : (isDestructive ? AppColors.destructive.withValues(alpha: 0.1) : AppColors.cardSurface);
     
     final borderColor = isPrimary
-        ? AppColors.primaryAccent.withOpacity(0.4)
-        : (isDestructive ? AppColors.destructive.withOpacity(0.3) : AppColors.divider);
+        ? AppColors.primaryAccent.withValues(alpha: 0.4)
+        : (isDestructive ? AppColors.destructive.withValues(alpha: 0.3) : AppColors.divider);
 
     final iconColor = isPrimary
         ? AppColors.primaryAccent
@@ -53,7 +53,7 @@ class LowMotivationOptionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
+                color: iconColor.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: iconColor, size: 24),
@@ -76,7 +76,7 @@ class LowMotivationOptionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right, color: AppColors.secondaryText.withOpacity(0.5)),
+            Icon(Icons.chevron_right, color: AppColors.secondaryText.withValues(alpha: 0.5)),
           ],
         ),
       ),

@@ -1,0 +1,25 @@
+﻿commit c7e9bd764e6a57e65393698f7d7a895a5101d2f2
+Merge: a376f51 0328de4
+Author: [HEALTH APP] Dev <healthapp@dev.local>
+Date:   Sun Mar 15 12:34:16 2026 +0400
+
+    merge: resolve conflict in supabase_migration_feature9.sql ΓÇö keep workout tracking and progress photos
+
+commit 0328de4bddf4694b91e70f2217c2bf29b06d960b
+Author: [HEALTH APP] Dev <healthapp@dev.local>
+Date:   Sun Mar 15 12:32:21 2026 +0400
+
+    feat: feature 9 - progress photos with privacy controls and body image safeguards
+
+commit a376f51e2e76b7051839d3712c08c72d01ab8d79
+Merge: a9331f5 2fb7a19
+Author: [HEALTH APP] Dev <healthapp@dev.local>
+Date:   Fri Mar 13 16:28:27 2026 +0400
+
+    merge: resolve conflicts between person-a/nutrition and person-b/fitness
+
+commit 2fb7a19e67f9cc47631606e3f93f5ece79a06bfd
+Author: [HEALTH APP] Dev <healthapp@dev.local>
+Date:   Fri Mar 13 16:23:00 2026 +0400
+
+    feat: feature 8 - streaks, low motivation button, clinical red flag

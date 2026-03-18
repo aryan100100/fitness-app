@@ -265,7 +265,9 @@ class AutoAdjustmentService {
     if (user.lastSituation3Prompt != null) {
       final last = DateTime.tryParse(user.lastSituation3Prompt!);
       if (last != null &&
-          DateTime.now().difference(last).inDays < 14) return null;
+          DateTime.now().difference(last).inDays < 14) {
+        return null;
+      }
     }
 
     final foodDays = await _weightSvc.countDistinctFoodLogDays(userId, days: 14);
@@ -290,7 +292,9 @@ class AutoAdjustmentService {
     if (user.lastWeeklyRecalcDate != null) {
       final last = DateTime.tryParse(user.lastWeeklyRecalcDate!);
       if (last != null &&
-          DateTime.now().difference(last).inDays < 6) return null;
+          DateTime.now().difference(last).inDays < 6) {
+        return null;
+      }
     }
 
     final result = await runWeeklyRecalc(user);
@@ -426,7 +430,9 @@ class AutoAdjustmentService {
     if (user.lastDivergenceCheck != null) {
       final last = DateTime.tryParse(user.lastDivergenceCheck!);
       if (last != null &&
-          DateTime.now().difference(last).inDays < 21) return null;
+          DateTime.now().difference(last).inDays < 21) {
+        return null;
+      }
     }
 
     // Need 21 days since start

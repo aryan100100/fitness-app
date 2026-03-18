@@ -215,7 +215,7 @@ class _RecipeTabState extends State<RecipeTab>
                 Switch(
                   value: _fitMacros,
                   onChanged: (v) => setState(() => _fitMacros = v),
-                  activeColor: AppColors.primaryAccent,
+                  activeThumbColor: AppColors.primaryAccent,
                 ),
               ],
             ),

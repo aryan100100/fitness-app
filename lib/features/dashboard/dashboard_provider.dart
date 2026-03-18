@@ -9,8 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/dashboard_summary.dart';
 import '../../models/food_log_model.dart';
 import '../../core/services/dashboard_service.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../../core/services/auto_adjustment_service.dart';
 import '../../core/services/streak_service.dart';
 import '../../core/services/low_motivation_service.dart';
 import '../../models/user_model.dart';

@@ -43,7 +43,7 @@ class ValuesReminderCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primaryAccent.withOpacity(0.15),
+              color: AppColors.primaryAccent.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.shield_outlined,

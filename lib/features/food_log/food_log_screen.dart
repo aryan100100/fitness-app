@@ -116,7 +116,9 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
         mealLabel: _mealLabel,
         user: widget.user,
       ),
-    ).then((_) => Navigator.of(context).pop());
+    ).then((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   void _logUsual(FoodLogModel usual) async {
@@ -179,7 +181,10 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                 builder: (_) => PhotoEstimatorScreen(
                     mealType: widget.mealType, user: widget.user),
               ),
-            ).then((_) => Navigator.of(context).pop()),
+            ).then((_) {
+               if (!context.mounted) return;
+               Navigator.of(context).pop();
+            }),
           ),
         ],
       ),
@@ -248,7 +253,10 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                               user: widget.user,
                               prefillName:
                                   _searchController.text.trim())),
-                    ).then((_) => Navigator.of(context).pop()),
+                    ).then((_) {
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
+                    }),
                   )
                 : _InitialContent(
                     usualFoods: _usualFoods,
@@ -281,7 +289,10 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                       MaterialPageRoute(
                           builder: (_) => ManualEntryScreen(
                               mealType: widget.mealType, user: widget.user)),
-                    ).then((_) => Navigator.of(context).pop()),
+                    ).then((_) {
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
+                    }),
                   ),
           ),
         ],
@@ -323,7 +334,7 @@ class _InitialContent extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: usualFoods.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
                 final food = usualFoods[i];
                 return GestureDetector(
@@ -452,7 +463,7 @@ class _SearchResults extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: results.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           Divider(color: AppColors.divider, height: 1),
       itemBuilder: (_, i) {
         final food = results[i];
@@ -519,7 +530,7 @@ class _MiniPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(text,

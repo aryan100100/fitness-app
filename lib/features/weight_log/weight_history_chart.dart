@@ -169,7 +169,7 @@ class WeightHistoryChart extends StatelessWidget {
               barWidth: 0,
               dotData: FlDotData(
                 show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                getDotPainter: (_, _, _, _) => FlDotCirclePainter(
                   radius: 2.5,
                   color: const Color(0xFF555555),
                   strokeWidth: 0,
@@ -187,7 +187,7 @@ class WeightHistoryChart extends StatelessWidget {
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: const Color(0xFF4CAF50).withOpacity(0.06),
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.06),
               ),
             ),
           ],

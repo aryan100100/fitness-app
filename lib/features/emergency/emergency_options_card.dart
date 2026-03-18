@@ -117,7 +117,7 @@ class _OptionCard extends StatelessWidget {
             ? const Color(0xFF3A3A3A)
             : const Color(0xFF2A2A2A);
     final bgColor = isSelected
-        ? amber.withOpacity(0.08)
+        ? amber.withValues(alpha: 0.08)
         : isEnabled
             ? const Color(0xFF1E1E1E)
             : const Color(0xFF181818);
@@ -157,10 +157,10 @@ class _OptionCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: amber.withOpacity(0.15),
+                      color: amber.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                       border:
-                          Border.all(color: amber.withOpacity(0.5), width: 1),
+                          Border.all(color: amber.withValues(alpha: 0.5), width: 1),
                     ),
                     child: Text(
                       badge!,

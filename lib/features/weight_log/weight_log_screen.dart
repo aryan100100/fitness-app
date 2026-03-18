@@ -374,7 +374,7 @@ class _MenstrualToggle extends StatelessWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: const Color(0xFFFFB300),
+              activeThumbColor: const Color(0xFFFFB300),
             ),
             const SizedBox(width: 8),
             const Text(
@@ -388,10 +388,10 @@ class _MenstrualToggle extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFB300).withOpacity(0.07),
+              color: const Color(0xFFFFB300).withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                  color: const Color(0xFFFFB300).withOpacity(0.3)),
+                  color: const Color(0xFFFFB300).withValues(alpha: 0.3)),
             ),
             child: const Text(
               "Weight often increases 1–3 kg during your period due to water retention — this is completely normal and not a change in body composition. We'll account for this when updating your targets.",

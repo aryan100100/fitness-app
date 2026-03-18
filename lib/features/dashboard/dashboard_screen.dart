@@ -494,50 +494,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Streak badge
-// ---------------------------------------------------------------------------
-class _StreakBadge extends StatelessWidget {
-  final int streak;
-  const _StreakBadge({required this.streak});
-
-  @override
-  Widget build(BuildContext context) {
-    if (streak > 0) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.primaryAccent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-              color: AppColors.primaryAccent.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.local_fire_department_outlined, size: 16, color: AppColors.primaryAccent),
-            const SizedBox(width: 4),
-            Text(
-              '$streak day streak',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.primaryAccent,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return Row(
-      children: [
-        const Icon(Icons.eco_outlined, size: 16, color: AppColors.secondaryText),
-        const SizedBox(width: 6),
-        Text('Log today to start your streak',
-            style: AppTextStyles.caption),
-      ],
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Overage soft message (non-punitive)
@@ -776,7 +732,7 @@ class _EmergencyButtonState extends State<_EmergencyButton>
   Widget build(BuildContext context) {
     final borderColor = widget.isOver ? _amber : AppColors.destructive;
     final bgColor = widget.isOver
-        ? _amber.withOpacity(0.07)
+        ? _amber.withValues(alpha: 0.07)
         : const Color(0x08FF5252);
     final textColor = widget.isOver ? _amber : AppColors.destructive;
 
@@ -832,7 +788,7 @@ class _PlanAdjustedBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1B3A27),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -958,6 +914,7 @@ class _LowMotivationButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (_) => LowMotivationSheet(user: user),
         ).then((changed) {
+          if (!context.mounted) return;
           if (changed == true) {
             context.read<DashboardProvider>().refresh(user);
           }
@@ -1060,7 +1017,7 @@ class _ClinicalFlagCard extends StatelessWidget {
                 _handleDismiss();
               },
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300).withOpacity(0.1),
+                backgroundColor: const Color(0xFFFFB300).withValues(alpha: 0.1),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
