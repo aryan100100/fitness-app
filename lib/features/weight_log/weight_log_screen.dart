@@ -15,7 +15,10 @@ import '../../../models/weight_log_model.dart';
 
 class WeightLogScreen extends StatefulWidget {
   final UserModel user;
-  const WeightLogScreen({super.key, required this.user});
+  /// When true, shows a back-arrow in the app bar (for modal/push nav).
+  /// When false (default), used as a tab — no back button.
+  final bool showBackButton;
+  const WeightLogScreen({super.key, required this.user, this.showBackButton = false});
 
   @override
   State<WeightLogScreen> createState() => _WeightLogScreenState();
@@ -173,7 +176,10 @@ class _WeightLogScreenState extends State<WeightLogScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         title: Text('Log Your Weight', style: AppTextStyles.body),
-        leading: const BackButton(color: AppColors.primaryText),
+        leading: widget.showBackButton
+            ? const BackButton(color: AppColors.primaryText)
+            : null,
+        automaticallyImplyLeading: false,
         actions: [
           // kg / lbs toggle
           GestureDetector(
@@ -368,7 +374,7 @@ class _MenstrualToggle extends StatelessWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeColor: const Color(0xFFFFB300),
+              activeThumbColor: const Color(0xFFFFB300),
             ),
             const SizedBox(width: 8),
             const Text(
@@ -382,10 +388,10 @@ class _MenstrualToggle extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFB300).withOpacity(0.07),
+              color: const Color(0xFFFFB300).withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                  color: const Color(0xFFFFB300).withOpacity(0.3)),
+                  color: const Color(0xFFFFB300).withValues(alpha: 0.3)),
             ),
             child: const Text(
               "Weight often increases 1–3 kg during your period due to water retention — this is completely normal and not a change in body composition. We'll account for this when updating your targets.",

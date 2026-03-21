@@ -1,78 +1,111 @@
-Analyzing fitness_app...
+﻿Resolving dependencies...
+Downloading packages...
+  app_links 6.4.1 (7.0.0 available)
+  fl_chart 0.69.2 (1.2.0 available)
+  flutter_dotenv 5.2.1 (6.0.0 available)
+  google_fonts 6.3.3 (8.0.2 available)
+  google_generative_ai 0.4.6 (0.4.7 available)
+  hooks 1.0.1 (1.0.2 available)
+  meta 1.17.0 (1.18.2 available)
+  native_toolchain_c 0.17.4 (0.17.6 available)
+  smooth_page_indicator 1.2.1 (2.0.1 available)
+  sqflite_android 2.4.2+2 (2.4.2+3 available)
+Got dependencies!
+10 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing Sem 4 Project...                                      
 
-  error - lib/features/dashboard/dashboard_provider.dart:158:18 - The method 'updateStreak' isn't defined for the type 'DashboardService'. Try correcting the name to the name of an existing method, or defining a method named 'updateStreak'. - undefined_method
-warning - lib/features/dashboard/dashboard_provider.dart:12:8 - Unused import: '../../core/constants/app_text_styles.dart'. Try removing the import directive. - unused_import
-warning - lib/features/dashboard/dashboard_provider.dart:13:8 - Unused import: '../../core/services/auto_adjustment_service.dart'. Try removing the import directive. - unused_import
-warning - lib/features/dashboard/dashboard_screen.dart:500:7 - The declaration '_StreakBadge' isn't referenced. Try removing the declaration of '_StreakBadge'. - unused_element
-   info - lib/core/services/auto_adjustment_service.dart:268:56 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
-   info - lib/core/services/auto_adjustment_service.dart:293:55 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
-   info - lib/core/services/auto_adjustment_service.dart:429:56 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
-   info - lib/core/services/gemini_service.dart:8:8 - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart'. Try removing the import directive. - unnecessary_import
-   info - lib/core/services/weight_log_service.dart:32:9 - Use the null-aware marker '?' rather than a null check via an 'if'. Try using '?'. - use_null_aware_elements
-   info - lib/features/dashboard/dashboard_screen.dart:11:8 - The imported package 'url_launcher' isn't a dependency of the importing package. Try adding a dependency for 'url_launcher' in the 'pubspec.yaml' file. - depend_on_referenced_packages
-   info - lib/features/dashboard/dashboard_screen.dart:779:18 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/dashboard_screen.dart:835:59 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/dashboard_screen.dart:962:13 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
-   info - lib/features/dashboard/dashboard_screen.dart:1063:58 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/divergence_diagnostic_card.dart:87:10 - The variable name '_Checklist' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
-   info - lib/features/dashboard/widgets/divergence_diagnostic_card.dart:102:47 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/divergence_diagnostic_card.dart:149:10 - The variable name '_Result' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
-   info - lib/features/dashboard/widgets/goal_progress_card.dart:204:37 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/meal_section.dart:98:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/meal_section.dart:162:40 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/meal_section.dart:204:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/meal_section.dart:257:22 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/dashboard/widgets/weekly_recalc_card.dart:286:55 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/diet_planner/recipe_tab.dart:218:19 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_button_sheet.dart:259:24 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_button_sheet.dart:515:40 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_button_sheet.dart:518:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_button_sheet.dart:644:27 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_button_sheet.dart:646:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_options_card.dart:120:17 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_options_card.dart:160:36 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/emergency/emergency_options_card.dart:163:51 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/food_detail_sheet.dart:6:8 - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart'. Try removing the import directive. - unnecessary_import
-   info - lib/features/food_log/food_detail_sheet.dart:229:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/food_detail_sheet.dart:232:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/food_log_screen.dart:119:32 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
-   info - lib/features/food_log/food_log_screen.dart:182:40 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
-   info - lib/features/food_log/food_log_screen.dart:251:48 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
-   info - lib/features/food_log/food_log_screen.dart:284:48 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
-   info - lib/features/food_log/food_log_screen.dart:326:37 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
-   info - lib/features/food_log/food_log_screen.dart:455:29 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
-   info - lib/features/food_log/food_log_screen.dart:522:22 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/photo_estimator_screen.dart:235:56 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/photo_estimator_screen.dart:241:26 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
-   info - lib/features/food_log/photo_estimator_screen.dart:299:32 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/photo_estimator_screen.dart:302:47 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/photo_estimator_screen.dart:329:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/photo_estimator_screen.dart:332:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/food_log/photo_estimator_screen.dart:479:41 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_option_card.dart:29:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_option_card.dart:30:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_option_card.dart:33:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_option_card.dart:34:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_option_card.dart:56:34 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_option_card.dart:79:70 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_sheet.dart:199:42 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_sheet.dart:201:61 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_sheet.dart:224:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_sheet.dart:226:65 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/low_motivation/low_motivation_sheet.dart:263:22 - Use interpolation to compose strings and values. Try using string interpolation to build the composite string. - prefer_interpolation_to_compose_strings
-   info - lib/features/low_motivation/values_reminder_card.dart:46:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/nav_shell.dart:54:26 - Don't use 'BuildContext's across async gaps. Try rewriting the code to not use the 'BuildContext', or guard the use with a 'mounted' check. - use_build_context_synchronously
-   info - lib/features/profile/dev_profile_screen.dart:108:19 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/profile/profile_screen.dart:474:13 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/streaks/streak_milestone_card.dart:38:40 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/streaks/streak_milestone_card.dart:40:59 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/streaks/streak_reset_card.dart:61:58 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/weight_log/weight_history_chart.dart:172:36 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
-   info - lib/features/weight_log/weight_history_chart.dart:172:40 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
-   info - lib/features/weight_log/weight_history_chart.dart:172:45 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
-   info - lib/features/weight_log/weight_history_chart.dart:190:48 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/weight_log/weight_log_screen.dart:377:15 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/weight_log/weight_log_screen.dart:391:46 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
-   info - lib/features/weight_log/weight_log_screen.dart:394:50 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\core\services\auto_adjustment_service.dart:268:56 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\auto_adjustment_service.dart:293:55 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\auto_adjustment_service.dart:429:56 - curly_braces_in_flow_control_structures
+   info - The import of 'dart:typed_data' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/foundation.dart' - lib\core\services\gemini_service.dart:8:8 - unnecessary_import
+warning - The value of the local variable 'lastDate' isn't used - lib\core\services\progress_photo_service.dart:198:13 - unused_local_variable
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\core\services\weight_log_service.dart:32:9 - use_null_aware_elements
+warning - Unused import: '../../core/constants/app_text_styles.dart' - lib\features\dashboard\dashboard_provider.dart:12:8 - unused_import
+warning - Unused import: '../../core/services/auto_adjustment_service.dart' - lib\features\dashboard\dashboard_provider.dart:13:8 - unused_import
+   info - The imported package 'url_launcher' isn't a dependency of the importing package - lib\features\dashboard\dashboard_screen.dart:11:8 - depend_on_referenced_packages
+warning - The declaration '_StreakBadge' isn't referenced - lib\features\dashboard\dashboard_screen.dart:500:7 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:779:18 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:835:59 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\features\dashboard\dashboard_screen.dart:962:13 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\dashboard_screen.dart:1063:58 - deprecated_member_use
+   info - The variable name '_Checklist' isn't a lowerCamelCase identifier - lib\features\dashboard\widgets\divergence_diagnostic_card.dart:87:10 - non_constant_identifier_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\divergence_diagnostic_card.dart:102:47 - deprecated_member_use
+   info - The variable name '_Result' isn't a lowerCamelCase identifier - lib\features\dashboard\widgets\divergence_diagnostic_card.dart:149:10 - non_constant_identifier_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\goal_progress_card.dart:204:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\meal_section.dart:98:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\meal_section.dart:162:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\meal_section.dart:204:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\meal_section.dart:257:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\widgets\weekly_recalc_card.dart:286:55 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\diet_planner\recipe_tab.dart:218:19 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_button_sheet.dart:259:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_button_sheet.dart:515:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_button_sheet.dart:518:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_button_sheet.dart:644:27 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_button_sheet.dart:646:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_options_card.dart:120:17 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_options_card.dart:160:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\emergency\emergency_options_card.dart:163:51 - deprecated_member_use
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\food_log\food_detail_sheet.dart:6:8 - unnecessary_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\food_detail_sheet.dart:229:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\food_detail_sheet.dart:232:50 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\features\food_log\food_log_screen.dart:119:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\food_log\food_log_screen.dart:182:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\food_log\food_log_screen.dart:251:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\food_log\food_log_screen.dart:284:48 - use_build_context_synchronously
+   info - Unnecessary use of multiple underscores - lib\features\food_log\food_log_screen.dart:326:37 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\food_log\food_log_screen.dart:455:29 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\food_log_screen.dart:522:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\photo_estimator_screen.dart:235:56 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\food_log\photo_estimator_screen.dart:241:26 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\photo_estimator_screen.dart:299:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\photo_estimator_screen.dart:302:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\photo_estimator_screen.dart:329:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\photo_estimator_screen.dart:332:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\food_log\photo_estimator_screen.dart:479:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_option_card.dart:29:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_option_card.dart:30:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_option_card.dart:33:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_option_card.dart:34:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_option_card.dart:56:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_option_card.dart:79:70 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_sheet.dart:199:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_sheet.dart:201:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_sheet.dart:224:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\low_motivation_sheet.dart:226:65 - deprecated_member_use
+   info - Use interpolation to compose strings and values - lib\features\low_motivation\low_motivation_sheet.dart:263:22 - prefer_interpolation_to_compose_strings
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\low_motivation\values_reminder_card.dart:46:46 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\features\nav_shell.dart:54:26 - use_build_context_synchronously
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\profile\dev_profile_screen.dart:272:19 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\profile\dev_profile_screen.dart:333:23 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\profile\dev_profile_screen.dart:343:23 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor or activeTrackColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\profile\profile_screen.dart:474:13 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\progress_photos\comparison_screen.dart:481:33 - unnecessary_underscores
+warning - Unused import: 'package:intl/intl.dart' - lib\features\progress_photos\progress_photos_screen.dart:6:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\streaks\streak_milestone_card.dart:38:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\streaks\streak_milestone_card.dart:40:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\streaks\streak_reset_card.dart:61:58 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\weight_log\weight_history_chart.dart:172:36 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\weight_log\weight_history_chart.dart:172:40 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\weight_log\weight_history_chart.dart:172:45 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\weight_log\weight_history_chart.dart:190:48 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\weight_log\weight_log_screen.dart:377:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\weight_log\weight_log_screen.dart:391:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\weight_log\weight_log_screen.dart:394:50 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\workout\exercise_picker_sheet.dart:139:41 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\workout\rest_timer_sheet.dart:123:32 - unnecessary_underscores
+   info - Statements in an if should be enclosed in a block - lib\features\workout\workout_hub_screen.dart:42:18 - curly_braces_in_flow_control_structures
+   info - Unnecessary use of multiple underscores - lib\features\workout\workout_hub_screen.dart:56:29 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\features\workout\workout_hub_screen.dart:57:39 - unnecessary_underscores
 
-74 issues found.
+cmd : 83 issues found. (ran in 27.3s)
+At line:1 char:1
++ cmd /c "flutter analyze" 2>&1 | Out-File 
+-Encoding utf8 analyze.txt;  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (83 i 
+   ssues found. (ran in 27.3s):String) [], Remot  
+  eException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

@@ -195,7 +195,6 @@ class ProgressPhotoService {
 
       if (lastDateStr == null) return false;
 
-      final lastDate = DateTime.parse(lastDateStr);
       final today = DateTime.now();
       final todayStr = _dateStr(today);
 

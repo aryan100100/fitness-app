@@ -52,9 +52,12 @@ dependencies:
 
   # cached_network_image: cache food images from API responses
   cached_network_image: ^3.4.1
-
   # Feature 10: Barcode scanning via ML Kit (on-device, no data leaves device)
   mobile_scanner: ^5.0.0
+
+  # person-b/fitness: URL launching + shared preferences (workout features)
+  url_launcher: any
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:

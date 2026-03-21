@@ -232,13 +232,13 @@ class _PhotoEstimatorScreenState extends State<PhotoEstimatorScreen>
           ),
         // Dark overlay
         Positioned.fill(
-          child: Container(color: AppColors.background.withOpacity(0.6)),
+          child: Container(color: AppColors.background.withValues(alpha: 0.6)),
         ),
         // Scan line animation
         Positioned.fill(
           child: AnimatedBuilder(
             animation: _scanLine,
-            builder: (_, __) {
+            builder: (_, _) {
               return CustomPaint(
                 painter: _ScanLinePainter(progress: _scanLine.value),
               );
@@ -296,10 +296,10 @@ class _PhotoEstimatorScreenState extends State<PhotoEstimatorScreen>
             padding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: confColor.withOpacity(0.12),
+              color: confColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
               border:
-                  Border.all(color: confColor.withOpacity(0.5)),
+                  Border.all(color: confColor.withValues(alpha: 0.5)),
             ),
             child: Text(confLabel,
                 style: AppTextStyles.caption
@@ -326,10 +326,10 @@ class _PhotoEstimatorScreenState extends State<PhotoEstimatorScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.08),
+                color: AppColors.warning.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: AppColors.warning.withOpacity(0.4)),
+                    color: AppColors.warning.withValues(alpha: 0.4)),
               ),
               child: Text(r.warningMessage!,
                   style: AppTextStyles.caption
@@ -476,7 +476,7 @@ class _ScanLinePainter extends CustomPainter {
 
     // Glow effect
     final glowPaint = Paint()
-      ..color = AppColors.primaryAccent.withOpacity(0.3)
+      ..color = AppColors.primaryAccent.withValues(alpha: 0.3)
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke;
     canvas.drawLine(Offset(0, y), Offset(size.width, y), glowPaint);

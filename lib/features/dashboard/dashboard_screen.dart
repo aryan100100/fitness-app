@@ -96,7 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WeightLogScreen(user: widget.user),
+        builder: (_) => WeightLogScreen(user: widget.user, showBackButton: true),
       ),
     );
   }
@@ -206,9 +206,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String get _greeting {
     final hour = DateTime.now().hour;
     final name = widget.user.name.split(' ').first;
-    if (hour < 12) return 'Good morning, $name 👋';
-    if (hour < 17) return 'Good afternoon, $name 👋';
-    return 'Good evening, $name 👋';
+    if (hour < 12) return 'Good morning, $name';
+    if (hour < 17) return 'Good afternoon, $name';
+    return 'Good evening, $name';
   }
 
   String get _todayDate {
@@ -264,11 +264,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: AppColors.cardSurface,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                    color: AppColors.primaryAccent,
-                                    width: 1.5),
+                                    color: AppColors.subtleBorder,
+                                    width: 1.0),
                               ),
-                              child: const Icon(Icons.person,
-                                  color: AppColors.primaryAccent),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  const Icon(Icons.person,
+                                      color: AppColors.primaryAccent),
+                                  Center(
+                                    child: Text(
+                                      widget.user.name.isNotEmpty
+                                          ? widget.user.name[0].toUpperCase()
+                                          : '?',
+                                      style: AppTextStyles.body.copyWith(
+                                          color: AppColors.primaryText,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -489,7 +504,7 @@ class _OverageMessage extends StatelessWidget {
     return AppCard(
       child: Row(
         children: [
-          const Text('💚', style: TextStyle(fontSize: 18)),
+          const Icon(Icons.favorite_outline, color: AppColors.primaryAccent, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -511,11 +526,11 @@ class _LowWeightBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.warning, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,14 +564,14 @@ class _NudgeBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.warning.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
         border:
-            Border.all(color: AppColors.warning.withOpacity(0.4), width: 1),
+            Border.all(color: AppColors.warning.withValues(alpha: 0.2), width: 1),
       ),
       child: Row(
         children: [
-          const Text('⏰', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.schedule_outlined, color: AppColors.warning, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -612,14 +627,14 @@ class _RecalibrationBanner extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.primaryAccent.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.primaryAccent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: AppColors.primaryAccent.withOpacity(0.4), width: 1),
+              color: AppColors.primaryAccent.withValues(alpha: 0.2), width: 1),
         ),
         child: Row(
           children: [
-            const Text('📊', style: TextStyle(fontSize: 16)),
+            const Icon(Icons.bar_chart_outlined, color: AppColors.primaryAccent, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -717,7 +732,7 @@ class _EmergencyButtonState extends State<_EmergencyButton>
   Widget build(BuildContext context) {
     final borderColor = widget.isOver ? _amber : AppColors.destructive;
     final bgColor = widget.isOver
-        ? _amber.withOpacity(0.07)
+        ? _amber.withValues(alpha: 0.07)
         : const Color(0x08FF5252);
     final textColor = widget.isOver ? _amber : AppColors.destructive;
 
@@ -734,8 +749,8 @@ class _EmergencyButtonState extends State<_EmergencyButton>
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.0),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -773,11 +788,11 @@ class _PlanAdjustedBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1B3A27),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
-          const Text('✅', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.check_circle_outline, color: Color(0xFF4CAF50), size: 18),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
@@ -899,6 +914,7 @@ class _LowMotivationButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           builder: (_) => LowMotivationSheet(user: user),
         ).then((changed) {
+          if (!context.mounted) return;
           if (changed == true) {
             context.read<DashboardProvider>().refresh(user);
           }
@@ -1001,7 +1017,7 @@ class _ClinicalFlagCard extends StatelessWidget {
                 _handleDismiss();
               },
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300).withOpacity(0.1),
+                backgroundColor: const Color(0xFFFFB300).withValues(alpha: 0.1),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),

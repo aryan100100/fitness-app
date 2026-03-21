@@ -18,28 +18,28 @@ class Step8LiftingExperience extends StatelessWidget {
 
   static const _levels = [
     (
-      emoji: '🌱',
+      icon: Icons.eco_outlined,
       label: 'No Experience',
       description:
           'I have never followed a structured workout program before.',
       value: 'none',
     ),
     (
-      emoji: '📈',
+      icon: Icons.trending_up_rounded,
       label: 'Beginner',
       description:
           'I have trained on and off, or followed a program for less than 1 year consistently.',
       value: 'beginner',
     ),
     (
-      emoji: '🏋️',
+      icon: Icons.fitness_center_rounded,
       label: 'Intermediate',
       description:
           'I have trained consistently for 1–3 years and understand the basics well.',
       value: 'intermediate',
     ),
     (
-      emoji: '🏆',
+      icon: Icons.emoji_events_outlined,
       label: 'Advanced',
       description:
           'I have trained seriously for 3+ years with structured progressive programming.',
@@ -72,7 +72,7 @@ class Step8LiftingExperience extends StatelessWidget {
                     padding: const EdgeInsets.only(
                         bottom: AppSpacing.cardSpacing),
                     child: _ExperienceCard(
-                      emoji: lvl.emoji,
+                      icon: lvl.icon,
                       label: lvl.label,
                       description: lvl.description,
                       value: lvl.value,
@@ -99,7 +99,7 @@ class Step8LiftingExperience extends StatelessWidget {
 // Experience level card
 // ---------------------------------------------------------------------------
 class _ExperienceCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String label;
   final String description;
   final String value;
@@ -107,7 +107,7 @@ class _ExperienceCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ExperienceCard({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.description,
     required this.value,
@@ -137,7 +137,7 @@ class _ExperienceCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 26)),
+            Icon(icon, size: 26, color: AppColors.primaryAccent),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

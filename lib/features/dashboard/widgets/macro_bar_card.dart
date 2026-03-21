@@ -182,10 +182,10 @@ class _MacroColumn extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(5),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 6,
+              minHeight: 10,
               backgroundColor: AppColors.divider,
               valueColor: AlwaysStoppedAnimation<Color>(activeColor),
             ),
@@ -241,10 +241,10 @@ class _FibreRow extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ClipRRect(
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(5),
           child: LinearProgressIndicator(
             value: progress,
-            minHeight: 6,
+            minHeight: 10,
             backgroundColor: AppColors.divider,
             valueColor: const AlwaysStoppedAnimation<Color>(fibreColor),
           ),

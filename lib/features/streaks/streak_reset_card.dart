@@ -58,7 +58,7 @@ class StreakResetCard extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onDismiss,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryAccent.withOpacity(0.15),
+                backgroundColor: AppColors.primaryAccent.withValues(alpha: 0.15),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

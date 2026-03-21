@@ -1,0 +1,13 @@
+﻿flutter : Android sdkmanager not found. Update to 
+the latest Android SDK and ensure that the 
+cmdline-tools are installed to resolve this.
+At line:1 char:12
++ echo "y" | flutter doctor --android-licenses 
+2>&1 | Out-File -Encodin ...
++            
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Andr 
+   oid sdkmana...o resolve this.:String) [], Rem  
+  oteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

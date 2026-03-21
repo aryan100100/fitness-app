@@ -3,7 +3,6 @@
 // Entry point from Profile tab.
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';

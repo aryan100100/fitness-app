@@ -283,7 +283,7 @@ class _SmallChangeBanner extends StatelessWidget {
         color: const Color(0xFF1B3A27),
         borderRadius: BorderRadius.circular(12),
         border:
-            Border.all(color: const Color(0xFF4CAF50).withOpacity(0.5)),
+            Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [

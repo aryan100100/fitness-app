@@ -79,12 +79,12 @@ class _DivergenceDiagnosticCardState extends State<DivergenceDiagnosticCard> {
           "Actual change so far: ${d.actualChangeKg.abs().toStringAsFixed(1)} kg\n\n"
           "Before adjusting anything, let's check a few things:",
       onDismiss: widget.onDismiss,
-      extraContent: _submitted ? _Result() : _Checklist(),
+      extraContent: _submitted ? _result() : _checklist(),
       actions: const [],
     );
   }
 
-  Widget _Checklist() {
+  Widget _checklist() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -99,7 +99,7 @@ class _DivergenceDiagnosticCardState extends State<DivergenceDiagnosticCard> {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFFFFB300).withOpacity(0.08)
+                    ? const Color(0xFFFFB300).withValues(alpha: 0.08)
                     : const Color(0xFF252525),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
@@ -146,7 +146,7 @@ class _DivergenceDiagnosticCardState extends State<DivergenceDiagnosticCard> {
     );
   }
 
-  Widget _Result() {
+  Widget _result() {
     if (_anythingExceptNone) {
       // Contextual factors selected — snooze
       return Column(

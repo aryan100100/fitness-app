@@ -95,7 +95,7 @@ class _MealSectionState extends State<MealSection> {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryAccent.withOpacity(0.15),
+                        color: AppColors.primaryAccent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.add,
@@ -159,7 +159,7 @@ class _FoodLogItem extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppColors.destructive.withOpacity(0.15),
+          color: AppColors.destructive.withValues(alpha: 0.15),
           borderRadius: const BorderRadius.vertical(
               bottom: Radius.circular(16)),
         ),
@@ -201,7 +201,7 @@ class _FoodLogItem extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                              color: AppColors.warning.withOpacity(0.12),
+                              color: AppColors.warning.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6)),
                           child: Row(
                             children: [
@@ -254,7 +254,7 @@ class _MacroPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

@@ -256,7 +256,7 @@ class _OptionsPage extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                _amber.withOpacity(0.12),
+                _amber.withValues(alpha: 0.12),
                 const Color(0xFF1A1A1A),
               ],
             ),
@@ -512,10 +512,10 @@ class _InterventionBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFB300).withOpacity(0.08),
+        color: const Color(0xFFFFB300).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFFFB300).withOpacity(0.3),
+          color: const Color(0xFFFFB300).withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -641,9 +641,9 @@ class _ConfirmationPage extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _amber.withOpacity(0.08),
+            color: _amber.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _amber.withOpacity(0.25)),
+            border: Border.all(color: _amber.withValues(alpha: 0.25)),
           ),
           child: loadingGemini
               ? const Row(

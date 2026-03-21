@@ -17,11 +17,11 @@ class Step7LifeSituation extends StatelessWidget {
       {super.key, required this.controller, required this.onNext});
 
   static const _situations = [
-    (emoji: '🏠', title: 'Hostel Student', value: 'hostel_student'),
-    (emoji: '💼', title: 'Office Worker', value: 'office_worker'),
-    (emoji: '🖥️', title: 'Work From Home', value: 'work_from_home'),
-    (emoji: '🍳', title: 'Homemaker', value: 'homemaker'),
-    (emoji: '✨', title: 'Other', value: 'other'),
+    (icon: Icons.home_work_outlined, title: 'Hostel Student', value: 'hostel_student'),
+    (icon: Icons.work_outline_rounded, title: 'Office Worker', value: 'office_worker'),
+    (icon: Icons.computer_rounded, title: 'Work From Home', value: 'work_from_home'),
+    (icon: Icons.restaurant_outlined, title: 'Homemaker', value: 'homemaker'),
+    (icon: Icons.auto_awesome_rounded, title: 'Other', value: 'other'),
   ];
 
   static const _regions = [
@@ -63,8 +63,7 @@ class Step7LifeSituation extends StatelessWidget {
                         horizontal: 16, vertical: 14),
                     child: Row(
                       children: [
-                        Text(s.emoji,
-                            style: const TextStyle(fontSize: 24)),
+                        Icon(s.icon, size: 26, color: AppColors.primaryAccent),
                         const SizedBox(width: 14),
                         Text(s.title,
                             style: AppTextStyles.body.copyWith(

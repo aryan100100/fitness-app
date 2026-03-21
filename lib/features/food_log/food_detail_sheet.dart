@@ -3,7 +3,6 @@
 // portion hint, sanity check, accuracy disclaimer, Add button.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -226,10 +225,10 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.08),
+                    color: AppColors.warning.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: AppColors.warning.withOpacity(0.3)),
+                        color: AppColors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     'Home cooking varies. Adjust for oil used and portion size.',

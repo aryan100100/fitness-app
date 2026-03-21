@@ -1,0 +1,41 @@
+﻿[ΓêÜ] Flutter (Channel stable, 3.41.4, on Microsoft Windows [Version 10.0.26200.8037], locale en-US) [587ms]
+    ΓÇó Flutter version 3.41.4 on channel stable at C:\src\flutter
+    ΓÇó Upstream repository https://github.com/flutter/flutter.git
+    ΓÇó Framework revision ff37bef603 (2 weeks ago), 2026-03-03 16:03:22 -0800
+    ΓÇó Engine revision e4b8dca3f1
+    ΓÇó Dart version 3.11.1
+    ΓÇó DevTools version 2.54.1
+    ΓÇó Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+
+[ΓêÜ] Windows Version (11 Home 64-bit, 25H2, 2009) [1,097ms]
+
+[X] Android toolchain - develop for Android devices [287ms]
+    X Unable to locate Android SDK.
+      Install Android Studio from: https://developer.android.com/studio/index.html
+      On first launch it will assist you in installing the Android SDK components.
+      (or visit https://flutter.dev/to/windows-android-setup for detailed instructions).
+      If the Android SDK has been installed to a custom location, please use
+      `flutter config --android-sdk` to update to that location.
+
+
+[ΓêÜ] Chrome - develop for the web [269ms]
+    ΓÇó Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[!] Visual Studio - develop Windows apps (Visual Studio Community 2022 17.14.28) [268ms]
+    ΓÇó Visual Studio at C:\Program Files\Microsoft Visual Studio\2022\Community
+    ΓÇó Visual Studio Community 2022 version 17.14.37027.9
+    X Visual Studio is missing necessary components. Please re-run the Visual Studio installer for the "Desktop development with C++" workload, and include these components:
+        MSVC v142 - VS 2019 C++ x64/x86 build tools
+         - If there are multiple build tool versions available, install the latest
+        C++ CMake tools for Windows
+        Windows 10 SDK
+
+[ΓêÜ] Connected device (3 available) [107ms]
+    ΓÇó Windows (desktop) ΓÇó windows ΓÇó windows-x64    ΓÇó Microsoft Windows [Version 10.0.26200.8037]
+    ΓÇó Chrome (web)      ΓÇó chrome  ΓÇó web-javascript ΓÇó Google Chrome 146.0.7680.80
+    ΓÇó Edge (web)        ΓÇó edge    ΓÇó web-javascript ΓÇó Microsoft Edge 145.0.3800.97
+
+[ΓêÜ] Network resources [1,439ms]
+    ΓÇó All expected network resources are available.
+
+! Doctor found issues in 2 categories.

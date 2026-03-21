@@ -201,7 +201,7 @@ class _OptionTile extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? amber.withOpacity(0.08) : const Color(0xFF252525),
+          color: isSelected ? amber.withValues(alpha: 0.08) : const Color(0xFF252525),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
               color: isSelected ? amber : const Color(0xFF3A3A3A),

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_text_styles.dart';
 import '../../models/user_model.dart';
 import 'meal_plan_tab.dart';
 import 'recipe_tab.dart';
@@ -25,13 +26,11 @@ class DietPlannerScreen extends StatelessWidget {
           toolbarHeight: 0, // no title bar — tabs sit at the top
           bottom: TabBar(
             indicatorColor: AppColors.primaryAccent,
-            indicatorWeight: 2.5,
+            indicatorWeight: 3.0,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white38,
-            labelStyle: const TextStyle(
-                fontWeight: FontWeight.w700, fontSize: 14),
-            unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500, fontSize: 14),
+            labelStyle: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+            unselectedLabelStyle: AppTextStyles.bodySecondary.copyWith(fontWeight: FontWeight.w500),
             tabs: const [
               Tab(text: 'Meal Plan'),
               Tab(text: 'Recipe'),
