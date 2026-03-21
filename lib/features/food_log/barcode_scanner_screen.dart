@@ -9,7 +9,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/services/barcode_service.dart';
-import '../../models/barcode_product_model.dart';
 import '../../models/user_model.dart';
 import 'barcode_result_screen.dart';
 import 'barcode_not_found_screen.dart';
@@ -38,7 +37,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   bool _isLookingUp = false;
   bool _scanned = false;
   String _guidanceText = 'Point camera at the barcode';
-  DateTime? _lastNoDetection;
 
   @override
   void initState() {
@@ -104,8 +102,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       result.source,
     );
 
+    if (!mounted) return;
+    final nav = Navigator.of(context);
+
     if (result.found && result.product != null) {
-      Navigator.of(context).pushReplacement(
+      nav.pushReplacement(
         MaterialPageRoute(
           builder: (_) => BarcodeResultScreen(
             product: result.product!,
@@ -115,7 +116,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
         ),
       );
     } else {
-      Navigator.of(context).pushReplacement(
+      nav.pushReplacement(
         MaterialPageRoute(
           builder: (_) => BarcodeNotFoundScreen(
             barcode: barcode,
@@ -217,7 +218,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           Center(
             child: AnimatedBuilder(
               animation: _pulseAnimation,
-              builder: (_, __) => Opacity(
+              builder: (context, child) => Opacity(
                 opacity: _pulseAnimation.value,
                 child: SizedBox(
                   width: 240,

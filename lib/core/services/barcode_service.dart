@@ -81,8 +81,8 @@ class BarcodeService {
           .eq('barcode', barcode)
           .limit(1);
 
-      if (rows == null || (rows as List).isEmpty) return null;
-      return BarcodeProduct.fromCustomFood(rows[0] as Map<String, dynamic>);
+      if (rows.isEmpty) return null;
+      return BarcodeProduct.fromCustomFood(rows.first);
     } catch (e) {
       return null;
     }
@@ -148,7 +148,7 @@ class BarcodeService {
       );
 
       if (match.isEmpty) return null;
-      return BarcodeProduct.fromIndianDb(match as Map<String, dynamic>);
+      return BarcodeProduct.fromIndianDb(match);
     } catch (e) {
       return null;
     }

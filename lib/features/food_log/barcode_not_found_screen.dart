@@ -256,7 +256,7 @@ class _BarcodeNotFoundScreenState extends State<BarcodeNotFoundScreen> {
                   value: _saveToPersonal,
                   onChanged: (v) =>
                       setState(() => _saveToPersonal = v),
-                  activeColor: AppColors.primaryAccent,
+                  activeThumbColor: AppColors.primaryAccent,
                 ),
               ]),
             ),

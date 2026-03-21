@@ -244,7 +244,7 @@ class _BarcodeResultScreenState extends State<BarcodeResultScreen> {
                   child: p100.imageUrl != null
                       ? Image.network(p100.imageUrl!,
                           width: 80, height: 80, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (context, error, stackTrace) =>
                               _imagePlaceholder())
                       : _imagePlaceholder(),
                 ),

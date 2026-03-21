@@ -221,13 +221,15 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
                         icon: const Icon(Icons.qr_code_scanner,
                             color: AppColors.secondaryText),
                         tooltip: 'Scan barcode',
-                        onPressed: () => Navigator.of(context)
-                            .push(MaterialPageRoute(
-                              builder: (_) => BarcodeScannerScreen(
-                                  mealType: widget.mealType,
-                                  user: widget.user),
-                            ))
-                            .then((_) => Navigator.of(context).pop()),
+                        onPressed: () async {
+                          await Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => BarcodeScannerScreen(
+                                mealType: widget.mealType,
+                                user: widget.user),
+                          ));
+                          if (!context.mounted) return;
+                          Navigator.of(context).pop();
+                        },
                       ),
                 filled: true,
                 fillColor: AppColors.cardSurface,
@@ -317,12 +319,14 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
               backgroundColor: AppColors.primaryAccent,
               foregroundColor: Colors.black,
               tooltip: 'Scan barcode',
-              onPressed: () => Navigator.of(context)
-                  .push(MaterialPageRoute(
-                    builder: (_) => BarcodeScannerScreen(
-                        mealType: widget.mealType, user: widget.user),
-                  ))
-                  .then((_) => Navigator.of(context).pop()),
+              onPressed: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => BarcodeScannerScreen(
+                      mealType: widget.mealType, user: widget.user),
+                ));
+                if (!context.mounted) return;
+                Navigator.of(context).pop();
+              },
               child: const Icon(Icons.qr_code_scanner, size: 26),
             ),
     );
