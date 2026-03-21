@@ -59,6 +59,9 @@ dependencies:
   url_launcher: any
   shared_preferences: ^2.5.4
 
+  # Feature 11: Share sheet for profile screen
+  share_plus: ^10.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
