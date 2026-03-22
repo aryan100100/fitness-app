@@ -461,7 +461,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _shareApp() {
     Share.share(
-      "I've been using this app to track my nutrition — it's really good. Check it out! 💪🥗",
+      "I've been using this app to track my nutrition — it's really good. Check it out!",
       subject: 'Health & Nutrition Tracker',
     );
   }
@@ -504,9 +504,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Computed helpers ───────────────────────────────────────────────────────
   String get _goalEmoji {
     switch (_user.goal) {
-      case 'lose': return 'Losing weight 🔥';
-      case 'gain': return 'Gaining muscle 💪';
-      default: return 'Maintaining ⚖️';
+      case 'lose': return 'Losing weight';
+      case 'gain': return 'Gaining muscle';
+      default: return 'Maintaining';
     }
   }
 
@@ -830,7 +830,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 10),
           Text(
             onTrack
-                ? "You're on track this week 🎯"
+                ? "You're on track this week"
                 : "$unloggedCount day${unloggedCount == 1 ? '' : 's'} without logging this week",
             style: AppTextStyles.caption.copyWith(
               color: onTrack ? AppColors.primaryAccent : AppColors.warning,
@@ -1112,7 +1112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SettingsRow(
           icon: Icons.info_outline,
           label: 'About',
-          subtitle: 'v1.0.0 · Built with ❤️',
+          subtitle: 'v1.0.0',
           onTap: () => showDialog(
             context: context,
             builder: (ctx) => AlertDialog(

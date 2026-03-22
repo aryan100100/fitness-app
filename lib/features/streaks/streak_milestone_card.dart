@@ -19,13 +19,13 @@ class StreakMilestoneCard extends StatelessWidget {
     if (streakDays >= 90) {
       return "Logging consistently for three months. This is how lasting change happens.";
     } else if (streakDays >= 30) {
-      return "30 days 🎯 A whole month of consistent logging. This is how lasting change happens.";
+      return "30 days — A whole month of consistent logging. This is how lasting change happens.";
     } else if (streakDays >= 14) {
-      return "14-day streak 🔥 Two full weeks of showing up for yourself.";
+      return "14-day streak — Two full weeks of showing up for yourself.";
     } else if (streakDays >= 7) {
-      return "7-day streak 🔥 You've logged every day this week — that's a powerful habit.";
+      return "7-day streak — You've logged every day this week — that's a powerful habit.";
     } else {
-      return "$streakDays-day streak 🔥 Great momentum keeping at it.";
+      return "$streakDays-day streak — Great momentum keeping at it.";
     }
   }
 

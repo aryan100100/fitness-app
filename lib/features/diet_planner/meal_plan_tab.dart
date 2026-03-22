@@ -314,7 +314,7 @@ class _MealPlanTabState extends State<MealPlanTab>
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('✨ Generate My Meal Plan',
+            child: const Text('Generate My Meal Plan',
                 style: TextStyle(
                     fontWeight: FontWeight.w800, fontSize: 16)),
           ),
@@ -336,7 +336,7 @@ class _MealPlanTabState extends State<MealPlanTab>
         const SizedBox(height: 16),
         Text(
           _slowThinking
-              ? 'Still thinking... complex meals take a moment ☕'
+              ? 'Still thinking... complex meals take a moment'
               : 'Generating your personalised plan...',
           textAlign: TextAlign.center,
           style: const TextStyle(color: Colors.white54, fontSize: 13),
@@ -380,8 +380,7 @@ class _MealPlanTabState extends State<MealPlanTab>
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            icon: const Text('🔄',
-                style: TextStyle(fontSize: 14)),
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white54, size: 14),
             label: const Text('Regenerate Plan',
                 style: TextStyle(
                     color: Colors.white54, fontWeight: FontWeight.w600)),

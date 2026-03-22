@@ -7,7 +7,7 @@ import '../../../../core/constants/app_text_styles.dart';
 
 class AdjustmentCard extends StatelessWidget {
   final Color borderColor;
-  final String emoji;
+  final IconData icon;
   final String title;
   final String body;
   final List<Widget> actions;
@@ -17,7 +17,7 @@ class AdjustmentCard extends StatelessWidget {
   const AdjustmentCard({
     super.key,
     required this.borderColor,
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.body,
     required this.actions,
@@ -42,7 +42,7 @@ class AdjustmentCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 20)),
+              Icon(icon, color: borderColor, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(title,

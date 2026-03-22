@@ -37,12 +37,12 @@ class _MealSectionState extends State<MealSection> {
     };
   }
 
-  String get _mealEmoji {
+  IconData get _mealIcon {
     return switch (widget.mealType) {
-      'breakfast' => '☀️',
-      'lunch'     => '🥗',
-      'dinner'    => '🍽️',
-      _           => '🍎',
+      'breakfast' => Icons.wb_sunny_outlined,
+      'lunch'     => Icons.lunch_dining_rounded,
+      'dinner'    => Icons.dinner_dining_rounded,
+      _           => Icons.apple,
     };
   }
 
@@ -68,7 +68,7 @@ class _MealSectionState extends State<MealSection> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  Text(_mealEmoji, style: const TextStyle(fontSize: 18)),
+                  Icon(_mealIcon, color: AppColors.secondaryText, size: 18),
                   const SizedBox(width: 10),
                   Text(
                     _mealLabel,

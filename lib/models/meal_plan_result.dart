@@ -98,11 +98,11 @@ class PlannedMeal {
 
   String get mealIcon {
     switch (mealType) {
-      case 'breakfast': return '🌅';
-      case 'lunch':     return '☀️';
-      case 'dinner':    return '🌙';
-      case 'snack':     return '🍎';
-      default:          return '🍽️';
+      case 'breakfast': return 'AM';
+      case 'lunch':     return 'PM';
+      case 'dinner':    return 'EVE';
+      case 'snack':     return 'SNK';
+      default:          return 'ML';
     }
   }
 }

@@ -138,7 +138,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                   const SizedBox(height: 40),
 
                   // Headline
-                  Text('Your personalised plan is ready 🎯',
+                  Text('Your personalised plan is ready',
                       style: AppTextStyles.headingLarge),
                   const SizedBox(height: 6),
                   Text(
@@ -198,7 +198,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                         if (plan.calorieFloorApplied) ...[
                           const SizedBox(height: 6),
                           Text(
-                            '⚠️ Capped at safe minimum — consider a gentler pace.',
+                            'Capped at safe minimum — consider a gentler pace.',
                             style: AppTextStyles.caption.copyWith(
                                 color: AppColors.destructive),
                           ),
@@ -235,7 +235,7 @@ class _ResultsScreenState extends State<ResultsScreen>
                         if (plan.carbWarning) ...[
                           const SizedBox(height: 10),
                           Text(
-                            '⚠️ Carbs are very low — consider a gentler pace.',
+                             'Carbs are very low — consider a gentler pace.',
                             style: AppTextStyles.caption.copyWith(
                                 color: AppColors.destructive),
                           ),

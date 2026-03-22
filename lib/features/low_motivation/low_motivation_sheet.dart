@@ -176,7 +176,7 @@ class _LowMotivationSheetState extends State<LowMotivationSheet> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('✨', style: TextStyle(fontSize: 24)),
+                const Icon(Icons.auto_awesome_rounded, color: AppColors.primaryAccent, size: 24),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(

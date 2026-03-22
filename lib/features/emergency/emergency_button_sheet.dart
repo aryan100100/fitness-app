@@ -266,7 +266,7 @@ class _OptionsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "It's okay. 👋",
+                "It's okay.",
                 style: TextStyle(
                   color: Color(0xFFE8E8E8),
                   fontSize: 26,
@@ -524,7 +524,7 @@ class _InterventionBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text('💛', style: TextStyle(fontSize: 16)),
+              const Icon(Icons.favorite_rounded, color: Color(0xFFFFB300), size: 16),
               const SizedBox(width: 8),
               Text(
                 level == InterventionLevel.strong
@@ -621,7 +621,7 @@ class _ConfirmationPage extends StatelessWidget {
 
         // Success header
         const Text(
-          '✅ Plan updated',
+          'Plan updated',
           style: TextStyle(
             color: Color(0xFFE0E0E0),
             fontSize: 22,
@@ -667,7 +667,7 @@ class _ConfirmationPage extends StatelessWidget {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('✨', style: TextStyle(fontSize: 20)),
+                    Icon(Icons.auto_awesome_rounded, color: const Color(0xFF64FFDA), size: 20),
                     const SizedBox(height: 8),
                     Text(
                       geminiMessage ?? '',

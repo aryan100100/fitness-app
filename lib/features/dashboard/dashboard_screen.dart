@@ -109,7 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case SituationType.loggingGap:
         return AdjustmentCard(
           borderColor: const Color(0xFFFFB300),
-          emoji: '👋',
+          icon: Icons.waving_hand_rounded,
           title: 'Welcome back',
           body: "You've had a short break from logging — that's completely normal. "
               "A quick weight check helps us keep your plan accurate.",
@@ -142,7 +142,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case SituationType.weightUpdatePrompt:
         return AdjustmentCard(
           borderColor: const Color(0xFF4CAF50),
-          emoji: '🎯',
+          icon: Icons.track_changes_rounded,
           title: 'Great consistency!',
           body: "You've been logging regularly. Updating your weight helps us keep your plan accurate "
               "— even 1–2 kg of change affects your ideal targets.",

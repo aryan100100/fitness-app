@@ -72,7 +72,7 @@ class _DivergenceDiagnosticCardState extends State<DivergenceDiagnosticCard> {
 
     return AdjustmentCard(
       borderColor: const Color(0xFFFFB300),
-      emoji: '📊',
+      icon: Icons.bar_chart_rounded,
       title: "Your progress looks a little different from what we predicted",
       body:
           "Expected change so far: ${d.expectedChangeKg.abs().toStringAsFixed(1)} kg\n"

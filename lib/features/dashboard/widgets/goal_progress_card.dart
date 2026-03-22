@@ -37,7 +37,7 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
 
     return AdjustmentCard(
       borderColor: borderColor,
-      emoji: '🏁',
+      icon: Icons.flag_rounded,
       title: 'Your goal date is in ${p.daysRemaining} ${p.daysRemaining == 1 ? 'day' : 'days'}',
       body: '',
       onDismiss: widget.onDismiss,
@@ -52,7 +52,7 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
           _OptionTile(
             id: 'extend_date',
             selected: _selected,
-            icon: '📅',
+            icon: Icons.calendar_today_rounded,
             title: 'Extend my timeline',
             subtitle: 'Keep my current pace. Adjust my goal date to match.',
             detail: 'New estimated date: ${p.suggestedNewGoalDate}',
@@ -62,7 +62,7 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
           _OptionTile(
             id: 'adjust_goal',
             selected: _selected,
-            icon: '🎯',
+            icon: Icons.track_changes_rounded,
             title: 'Adjust my goal amount',
             subtitle: 'Change my target weight to what I can realistically reach at my current pace.',
             detail: 'Suggested target: ${p.suggestedNewTargetWeight.toStringAsFixed(1)} kg',
@@ -72,7 +72,7 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
           _OptionTile(
             id: 'keep_going',
             selected: _selected,
-            icon: '🌱',
+            icon: Icons.eco_rounded,
             title: 'Keep going as planned',
             subtitle: "I'll accept I might not fully reach my original goal by this date — and that's okay. Progress at any pace is real progress.",
             detail: null,
@@ -175,7 +175,7 @@ class _StatRow extends StatelessWidget {
 class _OptionTile extends StatelessWidget {
   final String id;
   final String? selected;
-  final String icon;
+  final IconData icon;
   final String title;
   final String subtitle;
   final String? detail;
@@ -210,7 +210,7 @@ class _OptionTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 18)),
+            Icon(icon, color: const Color(0xFFE0E0E0), size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

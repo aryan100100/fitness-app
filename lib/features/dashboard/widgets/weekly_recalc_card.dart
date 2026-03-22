@@ -32,7 +32,7 @@ class WeeklyRecalcCard extends StatelessWidget {
 
       RecalcOutcome.rapidLoss => AdjustmentCard(
           borderColor: amber,
-          emoji: '⚠️',
+          icon: Icons.warning_amber_rounded,
           title: 'A note before updating your targets',
           body: result.message,
           onDismiss: onDismiss,
@@ -85,10 +85,10 @@ class _InfoCard extends StatelessWidget {
 
   const _InfoCard({required this.result, required this.onDismiss});
 
-  String get _emoji => switch (result.outcome) {
-        RecalcOutcome.stable => '⚖️',
-        RecalcOutcome.menstrualSkip => '💛',
-        _ => '📊',
+  IconData get _emoji => switch (result.outcome) {
+        RecalcOutcome.stable => Icons.balance_rounded,
+        RecalcOutcome.menstrualSkip => Icons.favorite_rounded,
+        _ => Icons.bar_chart_rounded,
       };
 
   String get _title => switch (result.outcome) {
@@ -101,7 +101,7 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdjustmentCard(
       borderColor: const Color(0xFF3A3A3A),
-      emoji: _emoji,
+      icon: _emoji,
       title: _title,
       body: result.message,
       onDismiss: onDismiss,
@@ -148,7 +148,7 @@ class _ChangeCardState extends State<_ChangeCard> {
 
     return AdjustmentCard(
       borderColor: amber,
-      emoji: widget.isPhased ? '📈' : '🔄',
+      icon: widget.isPhased ? Icons.trending_up_rounded : Icons.refresh_rounded,
       title: widget.isPhased
           ? 'Gradual target update'
           : 'Your weekly targets can be updated',
@@ -287,7 +287,7 @@ class _SmallChangeBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('✅', style: TextStyle(fontSize: 15)),
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 15),
           const SizedBox(width: 10),
           Expanded(
             child: Text(message,

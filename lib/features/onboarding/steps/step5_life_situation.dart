@@ -24,10 +24,10 @@ class Step5LifeSituation extends StatelessWidget {
   ];
 
   static const _regions = [
-    ('🇮🇳 India', 'India'),
-    ('🇺🇸 USA', 'USA'),
-    ('🇬🇧 UK', 'UK'),
-    ('🌍 Other', 'Other'),
+    ('India', 'India'),
+    ('USA', 'USA'),
+    ('UK', 'UK'),
+    ('Other', 'Other'),
   ];
 
   @override
@@ -115,7 +115,7 @@ class Step5LifeSituation extends StatelessWidget {
 
               const SizedBox(height: 36),
               PrimaryButton(
-                label: 'See My Results 🎯',
+                label: 'See My Results',
                 onTap: controller.step5Valid ? onFinish : null,
               ),
               const SizedBox(height: 32),

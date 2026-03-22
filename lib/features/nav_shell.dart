@@ -82,7 +82,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
             // Tab 0 — Dashboard
             DashboardScreen(user: widget.user),
             // Tab 1 — Log (placeholder — opened as modal via _onTabTapped)
-            _PlaceholderTab(label: 'Food Log', icon: '🍽️'),
+            _PlaceholderTab(label: 'Food Log', icon: ''),
             // Tab 2 — AI Plan
             DietPlannerScreen(user: widget.user),
             // Tab 3 — Workouts

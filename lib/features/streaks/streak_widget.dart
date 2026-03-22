@@ -36,7 +36,7 @@ class StreakWidget extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🔥', style: TextStyle(fontSize: 16)),
+              const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 16),
               const SizedBox(width: 8),
               Text(
                 '${streak.currentStreak} day streak',

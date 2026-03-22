@@ -252,7 +252,7 @@ class _RecipeTabState extends State<RecipeTab>
                                 fontSize: 15)),
                       ],
                     )
-                  : const Text('✨ Get Recipe',
+                  : const Text('Get Recipe',
                       style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 15)),
             ),
@@ -288,7 +288,7 @@ class _RecipeTabState extends State<RecipeTab>
                       color: Colors.white38, size: 40),
                   const SizedBox(height: 10),
                   const Text(
-                    'Unable to generate — tap ✨ Get Recipe to retry',
+                    'Unable to generate — tap Get Recipe to retry',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white38, fontSize: 13),
                   ),
