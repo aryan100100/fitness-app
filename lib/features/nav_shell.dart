@@ -104,7 +104,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
               child: SafeArea(
                 top: false,
                 child: SizedBox(
-                  height: 60,
+                  height: 64,
                   child: Row(
                     children: [
                       _NavItem(

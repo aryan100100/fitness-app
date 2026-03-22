@@ -9,6 +9,7 @@ import '../../core/services/workout_service.dart';
 import '../../core/services/workout_session_provider.dart';
 import '../../models/workout_model.dart';
 import 'active_workout_screen.dart';
+import 'workout_planner_screen.dart';
 
 class WorkoutHubScreen extends StatefulWidget {
   const WorkoutHubScreen({super.key});
@@ -104,8 +105,17 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
                     ],
 
                     // Start workout button
-                    if (!_provider.hasActiveSession)
+                    if (!_provider.hasActiveSession) ...[
                       _StartButton(onTap: _startWorkout),
+                      const SizedBox(height: 12),
+                      _RoutinesButton(onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const WorkoutPlannerScreen()),
+                        ).then((_) => _loadRecent());
+                      }),
+                    ],
 
                     const SizedBox(height: 32),
 
@@ -170,6 +180,39 @@ class _StartButton extends StatelessWidget {
             Text('Start Empty Workout',
                 style: AppTextStyles.body.copyWith(
                     color: Colors.black, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoutinesButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _RoutinesButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primaryAccent),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.list_alt_rounded,
+                color: AppColors.primaryAccent, size: 22),
+            const SizedBox(width: 8),
+            Text('Routines',
+                style: AppTextStyles.body.copyWith(
+                    color: AppColors.primaryAccent,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       ),

@@ -36,6 +36,18 @@ class WorkoutSessionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Start a session pre-loaded with exercises from a routine.
+  void addExercisesFromRoutine(
+    List<ExercisePreset> presets,
+    String userId, {
+    String routineName = 'Workout',
+  }) {
+    startSession(name: routineName, type: 'strength');
+    for (final preset in presets) {
+      addExercise(preset, userId);
+    }
+  }
+
   Future<void> discardSession() async {
     _ticker?.cancel();
     _ticker = null;
