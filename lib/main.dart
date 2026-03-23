@@ -1,8 +1,9 @@
 // [HEALTH APP] — App Entry Point
 // Initialises flutter_dotenv then Supabase before runApp.
 // On startup: checks for existing auth session.
-// If session + users row found → goes to dashboard directly (skip onboarding).
-// Otherwise → OnboardingScreen.
+// No session → WelcomeScreen (real auth).
+// Session + completed onboarding → Dashboard.
+// Session + incomplete onboarding → OnboardingScreen.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -11,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/app_colors.dart';
 import 'core/services/supabase_service.dart';
+import 'features/auth/welcome_screen.dart';
 import 'features/nav_shell.dart';
 import 'features/onboarding/onboarding_screen.dart';
 
@@ -126,16 +128,16 @@ class _AppRouterState extends State<_AppRouter> {
     final client = Supabase.instance.client;
     final session = client.auth.currentSession;
 
-    // No session → onboarding immediately, no network call needed
+    // No session → WelcomeScreen (user must authenticate)
     if (session == null || session.user.id.isEmpty) {
-      debugPrint('[ROUTER] No session → OnboardingScreen');
-      _goToOnboarding();
+      debugPrint('[ROUTER] No session → WelcomeScreen');
+      _goToWelcome();
       return;
     }
 
     debugPrint('[ROUTER] Session found: ${session.user.id}');
 
-    // Session exists → check if users row exists, with a 5s timeout fallback
+    // Session exists → check if onboarding is complete, with a 5s timeout fallback
     try {
       final existingUser = await SupabaseService.instance
           .fetchCurrentUser()
@@ -157,13 +159,22 @@ class _AppRouterState extends State<_AppRouter> {
           ),
         );
       } else {
-        debugPrint('[ROUTER] No user row found → OnboardingScreen');
+        debugPrint('[ROUTER] No user row → OnboardingScreen');
         _goToOnboarding();
       }
     } catch (e) {
-      debugPrint('[ROUTER] fetchCurrentUser error: $e → OnboardingScreen');
+      debugPrint('[ROUTER] fetchCurrentUser error: $e → Onboarding');
       _goToOnboarding();
     }
+  }
+
+  void _goToWelcome() {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const WelcomeScreen(),
+      ),
+    );
   }
 
   void _goToOnboarding() {

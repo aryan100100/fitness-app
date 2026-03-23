@@ -1,7 +1,8 @@
 // [HEALTH APP] — Onboarding Controller (State Management)
 // Single ChangeNotifier holding all user data across 8 onboarding steps.
 // Updated for Feature 1 Update: protein preference + lifting experience.
-// Updated for Bug Fix: anonymous auth + RLS-safe insert.
+// Updated for Feature 12: user is already authenticated when reaching onboarding.
+// Removed anonymous auth — saveToSupabase() uses the existing auth session.
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -110,26 +111,21 @@ class OnboardingController extends ChangeNotifier {
 
     try {
       // -----------------------------------------------------------------------
-      // Step 1 — Ensure the user is authenticated.
-      // REQUIRED: Anonymous auth must be enabled in Supabase Dashboard:
-      //   Authentication → Providers → Anonymous → Enable
+      // Step 1 — User is already authenticated (via Google, Apple, or email)
+      //          from the Welcome/Auth screen. Grab the existing session UID.
       // -----------------------------------------------------------------------
       final client = Supabase.instance.client;
-      var currentUser = client.auth.currentUser;
+      final currentUser = client.auth.currentUser;
 
       if (currentUser == null) {
-        debugPrint('[AUTH] No active session — signing in anonymously...');
-        currentUser = await _signInWithRetry(client);
-        debugPrint('[AUTH] Anonymous sign-in success. UID: ${currentUser.id}');
-      } else {
-        debugPrint('[AUTH] Reusing existing session. UID: ${currentUser.id}');
+        throw AuthException('No authenticated session found. Please sign in again.');
       }
 
+      debugPrint('[ONBOARDING] Saving profile for UID: ${currentUser.id}');
       final uid = currentUser.id;
 
       // -----------------------------------------------------------------------
       // Step 2 — Build the user model with the auth UID as the users.id.
-      // This is CRITICAL: the RLS policy requires id = auth.uid().
       // -----------------------------------------------------------------------
       final plan = nutritionPlan!;
       final today = DateHelpers.todayString();
@@ -176,24 +172,16 @@ class OnboardingController extends ChangeNotifier {
       return user;
 
     } on AuthException catch (e) {
-      // Auth-specific error — most likely Anonymous Auth is disabled
       debugPrint('[AUTH ERROR] statusCode: ${e.statusCode}');
       debugPrint('[AUTH ERROR] message: ${e.message}');
-      if (kDebugMode && (e.message.contains('disabled') || e.message.contains('Anonymous'))) {
-        debugPrint('\n>>> FIX REQUIRED <<<');
-        debugPrint('Anonymous Auth is disabled in your Supabase project.');
-        debugPrint('Go to: Dashboard → Authentication → Providers → Anonymous → Enable');
-        debugPrint('<<<>>>\n');
-      }
       isSaving = false;
       saveError = kDebugMode
           ? 'Auth error [${e.statusCode}]: ${e.message}'
-          : 'Could not save your profile. Please try again.';
+          : 'Could not save your profile. Please sign in again.';
       notifyListeners();
       return null;
 
     } on PostgrestException catch (e) {
-      // Supabase DB error: gives us code, message, details, hint
       final msg = 'Supabase error [${e.code}]: ${e.message}\n'
           'Details: ${e.details}\nHint: ${e.hint}';
       debugPrint('[ERROR] $msg');
@@ -213,26 +201,6 @@ class OnboardingController extends ChangeNotifier {
           : 'Could not save your profile. Please try again.';
       notifyListeners();
       return null;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private helper — anonymous sign-in with one retry after 2 seconds.
-  // Separating this keeps saveToSupabase() readable.
-  // ---------------------------------------------------------------------------
-  Future<User> _signInWithRetry(SupabaseClient client) async {
-    try {
-      final response = await client.auth.signInAnonymously();
-      final user = response.user;
-      if (user == null) throw AuthException('signInAnonymously returned null user');
-      return user;
-    } on AuthException catch (e) {
-      debugPrint('[AUTH] First attempt unsuccessful: ${e.message}. Retrying in 2s...');
-      await Future.delayed(const Duration(seconds: 2));
-      final response = await client.auth.signInAnonymously();
-      final user = response.user;
-      if (user == null) throw AuthException('signInAnonymously returned null user after retry');
-      return user;
     }
   }
 

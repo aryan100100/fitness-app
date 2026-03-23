@@ -2,6 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Feature 12: Google Sign In URL scheme -->
+	<!-- Replace YOUR_GOOGLE_CLIENT_ID with the reversed iOS client ID from Google Cloud Console -->
+	<!-- See AUTH_SETUP.md for full instructions -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.YOUR_GOOGLE_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Used for barcode scanning to look up food nutrition data, and for photo-based meal estimation.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
