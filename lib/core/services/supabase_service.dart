@@ -1,15 +1,57 @@
 // [HEALTH APP] — Supabase Service
 // Centralised data access layer. All DB reads/writes go through this class.
 
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/user_model.dart';
 import '../../models/food_log_model.dart';
+import '../../features/auth/welcome_screen.dart';
 
 class SupabaseService {
   SupabaseService._();
   static final SupabaseService instance = SupabaseService._();
 
   SupabaseClient get _client => Supabase.instance.client;
+
+  // ---------------------------------------------------------------------------
+  // Central auth error handler.
+  // Call from any catch block where a Supabase call might fail due to
+  // session expiry. If the error is auth-related, signs out and redirects
+  // to WelcomeScreen. Otherwise rethrows so the caller handles it normally.
+  // ---------------------------------------------------------------------------
+  static bool _isAuthError(dynamic error) {
+    if (error is AuthException) return true;
+    final msg = error.toString().toLowerCase();
+    return msg.contains('jwt') ||
+        msg.contains('token') ||
+        msg.contains('expired') ||
+        msg.contains('not authenticated') ||
+        msg.contains('invalid claim');
+  }
+
+  static Future<void> handleAuthError(
+    dynamic error,
+    BuildContext context,
+  ) async {
+    if (!_isAuthError(error)) throw error;
+    debugPrint('[SUPABASE SERVICE] Auth error detected — signing out: $error');
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {}
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Your session expired — please sign in again.'),
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Color(0xFF1A1A1A),
+      ),
+    );
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Users
@@ -39,16 +81,24 @@ class SupabaseService {
   }
 
   /// Fetch the current user's profile from Supabase.
+  /// Returns null if no session. Throws on auth errors so the router
+  /// can handle them (e.g. redirect to WelcomeScreen).
   Future<UserModel?> fetchCurrentUser() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
-    final data = await _client
-        .from('users')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
-    if (data == null) return null;
-    return UserModel.fromJson(data);
+    try {
+      final data = await _client
+          .from('users')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+      if (data == null) return null;
+      return UserModel.fromJson(data);
+    } on AuthException {
+      rethrow; // Caught by _AppRouter._route() and handled via redirect
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Update specific fields on the user's profile.

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/workout_service.dart';
 import '../../core/services/workout_session_provider.dart';
 import '../../models/workout_session_model.dart';
 import 'exercise_picker_sheet.dart';
@@ -22,6 +23,9 @@ class ActiveWorkoutScreen extends StatefulWidget {
 class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   final _provider = WorkoutSessionProvider.instance;
   final _userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+
+  // PB flash: key = 'exerciseIdx_setIdx', value = true while badge visible
+  final Map<String, bool> _pbSets = {};
 
   void _openExercisePicker() {
     showModalBottomSheet(
@@ -207,14 +211,37 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           exercise: session.exercises[i],
           exerciseIndex: i,
           previousPerf: _provider.getPreviousPerf(session.exercises[i].name),
+          personalBest: _provider.getPersonalBest(session.exercises[i].name),
           overloadSuggestion:
               _provider.getOverloadSuggestion(session.exercises[i].name),
           onAddSet: () => _provider.addSet(i),
           onRemove: () => _provider.removeExercise(i),
-          onToggleSet: (si) {
+          onToggleSet: (si) async {
             final completed = _provider.toggleSetComplete(i, si);
-            if (completed) _showRestTimer(i, si);
+            if (completed) {
+              _showRestTimer(i, si);
+              // PB check
+              final ex = _provider.session?.exercises[i];
+              final s = ex?.sets[si];
+              if (ex != null && !ex.isCardio &&
+                  s != null && s.weightKg != null && s.reps != null) {
+                final isPb = await WorkoutService.instance.checkIsPB(
+                  userId: _userId,
+                  exerciseName: ex.name,
+                  reps: s.reps!,
+                  weightKg: s.weightKg!,
+                );
+                if (isPb && mounted) {
+                  final key = '${i}_$si';
+                  setState(() => _pbSets[key] = true);
+                  Future.delayed(const Duration(seconds: 3), () {
+                    if (mounted) setState(() => _pbSets.remove(key));
+                  });
+                }
+              }
+            }
           },
+          pbSets: Map.from(_pbSets),
           onCycleType: (si) => _provider.cycleSetType(i, si),
           onWeightChanged: (si, w) => _provider.updateSetWeight(i, si, w),
           onRepsChanged: (si, r) => _provider.updateSetReps(i, si, r),
@@ -327,7 +354,9 @@ class _ExerciseCard extends StatelessWidget {
   final LiveExercise exercise;
   final int exerciseIndex;
   final String? previousPerf;
+  final String? personalBest;   // Fix E: historical best in 90 days
   final String? overloadSuggestion;
+  final Map<String, bool> pbSets; // Fix B: 'ei_si' keys for flashing PB badge
   final VoidCallback onAddSet;
   final VoidCallback onRemove;
   final void Function(int) onToggleSet;
@@ -342,7 +371,9 @@ class _ExerciseCard extends StatelessWidget {
     required this.exercise,
     required this.exerciseIndex,
     required this.previousPerf,
+    required this.personalBest,
     required this.overloadSuggestion,
+    required this.pbSets,
     required this.onAddSet,
     required this.onRemove,
     required this.onToggleSet,
@@ -386,6 +417,18 @@ class _ExerciseCard extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
+                      // Fix E: personal best caption
+                      if (personalBest != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Previous best: $personalBest',
+                          style: AppTextStyles.caption.copyWith(
+                              color: Colors.white38),
+                        ),
+                      ] else
+                        Text('No previous data',
+                            style: AppTextStyles.caption
+                                .copyWith(color: Colors.white24)),
                     ],
                   ),
                 ),
@@ -482,10 +525,12 @@ class _ExerciseCard extends StatelessWidget {
           ...exercise.sets.asMap().entries.map((entry) {
             final si = entry.key;
             final set = entry.value;
+            final pbKey = '${exerciseIndex}_$si';
             return _SetRow(
               setIndex: si,
               set: set,
               isCardio: exercise.isCardio,
+              isPb: pbSets[pbKey] == true,
               previousLabel: set.previousLabel,
               onToggle: () => onToggleSet(si),
               onCycleType: () => onCycleType(si),
@@ -558,6 +603,7 @@ class _SetRow extends StatelessWidget {
   final int setIndex;
   final LiveSet set;
   final bool isCardio;
+  final bool isPb;          // Fix B: flash PB badge for 3s after completion
   final String? previousLabel;
   final VoidCallback onToggle;
   final VoidCallback onCycleType;
@@ -571,6 +617,7 @@ class _SetRow extends StatelessWidget {
     required this.setIndex,
     required this.set,
     required this.isCardio,
+    required this.isPb,
     required this.previousLabel,
     required this.onToggle,
     required this.onCycleType,
@@ -664,6 +711,27 @@ class _SetRow extends StatelessWidget {
               ),
             ),
 
+            // PB badge overlay (Fix B)
+            AnimatedOpacity(
+              opacity: isPb ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 400),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'New PB!',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.amber,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(width: 8),
 
             // Checkmark

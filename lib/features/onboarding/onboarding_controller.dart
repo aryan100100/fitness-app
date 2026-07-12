@@ -5,6 +5,7 @@
 // Removed anonymous auth — saveToSupabase() uses the existing auth session.
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/tdee_calculator.dart';
 import '../../core/utils/date_helpers.dart';
@@ -103,7 +104,7 @@ class OnboardingController extends ChangeNotifier {
   // This gives the user a real auth.uid() immediately, satisfying the RLS
   // INSERT policy which requires: id = auth.uid().
   // ---------------------------------------------------------------------------
-  Future<UserModel?> saveToSupabase() async {
+  Future<UserModel?> saveToSupabase({BuildContext? context}) async {
     if (nutritionPlan == null) return null;
     isSaving = true;
     saveError = null;
@@ -175,6 +176,12 @@ class OnboardingController extends ChangeNotifier {
       debugPrint('[AUTH ERROR] statusCode: ${e.statusCode}');
       debugPrint('[AUTH ERROR] message: ${e.message}');
       isSaving = false;
+      notifyListeners();
+      // If we have a context, use the global handler to redirect to WelcomeScreen
+      if (context != null && context.mounted) {
+        await SupabaseService.handleAuthError(e, context);
+        return null;
+      }
       saveError = kDebugMode
           ? 'Auth error [${e.statusCode}]: ${e.message}'
           : 'Could not save your profile. Please sign in again.';

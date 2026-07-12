@@ -131,6 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case SituationType.goalDateApproaching:
         return GoalProgressCard(
           progress: situation.goalProgress!,
+          weightUnit: widget.user.weightUnit,
           onDismiss: dismiss,
           onApply: (option) async {
             await AutoAdjustmentService.instance

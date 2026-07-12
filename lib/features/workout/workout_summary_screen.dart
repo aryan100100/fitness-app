@@ -4,17 +4,21 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/workout_service.dart';
 import '../../core/services/workout_session_provider.dart';
+import '../../core/utils/weight_utils.dart';
 import '../../models/workout_session_model.dart';
 
 class WorkoutSummaryScreen extends StatefulWidget {
   final WorkoutSessionModel session;
   final String userId;
+  final String weightUnit; // 'kg' or 'lbs' — defaults to 'kg' if not threaded
 
   const WorkoutSummaryScreen({
     super.key,
     required this.session,
     required this.userId,
+    this.weightUnit = 'kg',
   });
 
   @override
@@ -23,6 +27,35 @@ class WorkoutSummaryScreen extends StatefulWidget {
 
 class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
   bool _saving = false;
+  // Real PB results: exerciseName → true if best set in this session is a PB
+  final Map<String, bool> _pbResults = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPBs();
+  }
+
+  Future<void> _checkPBs() async {
+    for (final ex in widget.session.exercises) {
+      final completed = ex.sets
+          .where((s) =>
+              s.status == SetStatus.completed &&
+              s.weightKg != null &&
+              s.reps != null)
+          .toList();
+      if (completed.isEmpty) continue;
+      final best = completed.reduce(
+          (a, b) => (a.weightKg ?? 0) > (b.weightKg ?? 0) ? a : b);
+      final isPb = await WorkoutService.instance.checkIsPB(
+        userId: widget.userId,
+        exerciseName: ex.name,
+        reps: best.reps!,
+        weightKg: best.weightKg!,
+      );
+      if (mounted) setState(() => _pbResults[ex.name] = isPb);
+    }
+  }
 
   Future<void> _save() async {
     setState(() => _saving = true);
@@ -113,7 +146,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                 const SizedBox(width: 12),
                 _StatCard(
                   label: 'Volume',
-                  value: '${session.totalVolumeKg.toStringAsFixed(0)}kg',
+                  value: formatWeight(session.totalVolumeKg, widget.weightUnit),
                   icon: Icons.bar_chart_rounded,
                 ),
                 const SizedBox(width: 12),
@@ -159,15 +192,14 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                           const SizedBox(height: 2),
                           Text(
                             '${completedSets.length} sets'
-                            '${bestWeight > 0 ? ' · Best: ${bestWeight.toStringAsFixed(1)}kg' : ''}',
+                            '${bestWeight > 0 ? ' · Best: ${formatWeight(bestWeight, widget.weightUnit)}' : ''}',
                             style: AppTextStyles.caption,
                           ),
                         ],
                       ),
                     ),
-                    // PR badge placeholder — in a real implementation you'd
-                    // compare against historical bests from Supabase
-                    if (bestWeight > 0)
+                    // Real PB badge (Fix B)
+                    if (_pbResults[ex.name] == true)
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
@@ -181,7 +213,7 @@ class _WorkoutSummaryScreenState extends State<WorkoutSummaryScreen> {
                             const Icon(Icons.emoji_events_rounded,
                                 size: 12, color: Colors.amber),
                             const SizedBox(width: 3),
-                            Text('PR',
+                            Text('New PB!',
                                 style: AppTextStyles.caption.copyWith(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,

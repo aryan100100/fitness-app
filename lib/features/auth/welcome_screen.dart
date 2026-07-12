@@ -1,12 +1,18 @@
 // [HEALTH APP] — Welcome Screen (Feature 12)
-// First screen shown to unauthenticated users.
-// Google Sign In (primary), Apple Sign In (iOS only), Email fallback.
+// TEMP: Simplified to email/password only for internal testing.
+// Google + Apple sign-in code is commented out below — restore by:
+//   1. Uncommenting the Google/Apple sections in _buildBottomPanel()
+//   2. Uncommenting the _googleSignIn() and _appleSignIn() methods
+//   3. Re-adding the Google/Apple button calls in _buildBottomPanel()
 
+// ignore_for_file: unused_import
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -14,8 +20,10 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/supabase_service.dart';
 import '../nav_shell.dart';
 import '../onboarding/onboarding_screen.dart';
-import 'signup_screen.dart';
-import 'signin_screen.dart';
+
+// TEMP: Google/Apple auth disabled for testing — see comment at top of file
+// import 'signup_screen.dart';
+// import 'signin_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -26,11 +34,29 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
-  bool _googleLoading = false;
-  bool _appleLoading = false;
+  // ── Form mode: sign-in (false) or sign-up (true) ─────────────────────────
+  bool _isSignUp = false;
+
+  // ── Controllers ────────────────────────────────────────────────────────────
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+  String? _emailError;
+  String? _passwordError;
+  String? _generalError;
+  bool _emailConfirmationPending = false;
+
+  // ── Entrance animation ─────────────────────────────────────────────────────
   late AnimationController _slideCtrl;
   late Animation<Offset> _slideAnim;
   late Animation<double> _fadeAnim;
+
+  // TEMP: Google/Apple loading states disabled — restore when providers configured
+  // bool _googleLoading = false;
+  // bool _appleLoading = false;
 
   @override
   void initState() {
@@ -50,30 +76,37 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void dispose() {
     _slideCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
-  // ── Route after auth ────────────────────────────────────────────────────────
+  // ── Route after auth ───────────────────────────────────────────────────────
   Future<void> _handleResult(AuthResult result) async {
     if (!result.success) {
       if (!mounted) return;
       if (result.error != null && result.error != 'Sign-in cancelled') {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(result.error!),
-          backgroundColor: AppColors.destructive,
-          behavior: SnackBarBehavior.floating,
-        ));
+        final err = result.error!;
+        // Route error to the most relevant field
+        if (err.toLowerCase().contains('password') ||
+            err.toLowerCase().contains('credentials')) {
+          setState(() => _passwordError = err);
+        } else if (err.toLowerCase().contains('email')) {
+          setState(() => _emailError = err);
+        } else {
+          setState(() => _generalError = err);
+        }
       }
       return;
     }
 
     if (!mounted) return;
     if (result.isNewUser) {
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (route) => false,
       );
     } else {
-      // Existing user — fetch profile and go to dashboard
       _navigateToDashboard();
     }
   }
@@ -83,38 +116,118 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       final user = await SupabaseService.instance.fetchCurrentUser();
       if (!mounted) return;
       if (user != null) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => BottomNavShell(user: user)),
+          (route) => false,
         );
       } else {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          (route) => false,
         );
       }
     } catch (_) {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (route) => false,
       );
     }
   }
 
-  Future<void> _googleSignIn() async {
-    setState(() => _googleLoading = true);
-    final result = await AuthService.instance.signInWithGoogle();
-    if (mounted) setState(() => _googleLoading = false);
+  // TEMP: Google/Apple sign-in methods disabled — restore when providers configured
+  //
+  // Future<void> _googleSignIn() async {
+  //   setState(() => _googleLoading = true);
+  //   final result = await AuthService.instance.signInWithGoogle();
+  //   if (mounted) setState(() => _googleLoading = false);
+  //   await _handleResult(result);
+  // }
+  //
+  // Future<void> _appleSignIn() async {
+  //   setState(() => _appleLoading = true);
+  //   final result = await AuthService.instance.signInWithApple();
+  //   if (mounted) setState(() => _appleLoading = false);
+  //   await _handleResult(result);
+  // }
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  bool _validate() {
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+      _generalError = null;
+    });
+
+    bool ok = true;
+    final email = _emailCtrl.text.trim();
+    // Basic format: must contain @ and have something on both sides
+    if (email.isEmpty ||
+        !email.contains('@') ||
+        email.split('@').last.isEmpty) {
+      setState(() => _emailError = 'Please enter a valid email address');
+      ok = false;
+    }
+    // Supabase minimum is 6 characters
+    if (_passwordCtrl.text.length < 6) {
+      setState(() => _passwordError = 'Password must be at least 6 characters');
+      ok = false;
+    }
+    return ok;
+  }
+
+  Future<void> _submit() async {
+    if (!_validate()) return;
+    setState(() {
+      _isLoading = true;
+      _emailConfirmationPending = false;
+    });
+
+    final AuthResult result;
+    if (_isSignUp) {
+      result = await AuthService.instance.signUpWithEmail(
+        _emailCtrl.text,
+        _passwordCtrl.text,
+      );
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Supabase returns success but session == null when email confirmation
+      // is required. Check: if success but we still have no current session,
+      // it means "confirm email first".
+      final hasSession =
+          Supabase.instance.client.auth.currentSession != null;
+      if (result.success && !hasSession) {
+        // Email confirmation is ON — stay on screen, show message
+        setState(() => _emailConfirmationPending = true);
+        return;
+      }
+    } else {
+      result = await AuthService.instance.signInWithEmail(
+        _emailCtrl.text,
+        _passwordCtrl.text,
+      );
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+
     await _handleResult(result);
   }
 
-  Future<void> _appleSignIn() async {
-    setState(() => _appleLoading = true);
-    final result = await AuthService.instance.signInWithApple();
-    if (mounted) setState(() => _appleLoading = false);
-    await _handleResult(result);
+  void _toggleMode() {
+    setState(() {
+      _isSignUp = !_isSignUp;
+      _emailError = null;
+      _passwordError = null;
+      _generalError = null;
+      _emailConfirmationPending = false;
+    });
   }
 
-  void _openTerms() => launchUrl(Uri.parse('https://healthapp.example.com/terms'));
-  void _openPrivacy() => launchUrl(Uri.parse('https://healthapp.example.com/privacy'));
+  void _openTerms() =>
+      launchUrl(Uri.parse('https://healthapp.example.com/terms'));
+  void _openPrivacy() =>
+      launchUrl(Uri.parse('https://healthapp.example.com/privacy'));
 
   @override
   Widget build(BuildContext context) {
@@ -122,10 +235,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // ── Background gradient + logo ────────────────────────────────────
-          Positioned.fill(
-            child: _buildBackground(context),
-          ),
+          // ── Background gradient + logo ───────────────────────────────────
+          Positioned.fill(child: _buildBackground(context)),
           // ── Bottom panel ─────────────────────────────────────────────────
           Align(
             alignment: Alignment.bottomCenter,
@@ -147,7 +258,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     return Column(
       children: [
         SizedBox(
-          height: size.height * 0.52,
+          height: size.height * 0.40,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -196,8 +307,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: Text(
                   'Your personal nutrition coach —\nscience-backed, judgment-free.',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySecondary.copyWith(
-                      fontSize: 15, height: 1.5),
+                  style:
+                      AppTextStyles.bodySecondary.copyWith(fontSize: 15, height: 1.5),
                 ),
               ),
             ],
@@ -208,127 +319,317 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   Widget _buildBottomPanel(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 28,
-        bottom: MediaQuery.of(context).padding.bottom + 24,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag indicator
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
+    return SingleChildScrollView(
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 28,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag indicator
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text('Get started', style: AppTextStyles.headingMedium),
-          const SizedBox(height: 4),
-          Text(
-            'Your data stays private and is only visible to you.',
-            style: AppTextStyles.caption.copyWith(color: AppColors.secondaryText),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-          // ── Google Button ─────────────────────────────────────────────────
-          _GoogleButton(loading: _googleLoading, onTap: _googleSignIn),
-          const SizedBox(height: 12),
-
-          // ── Apple Button (iOS only) ───────────────────────────────────────
-          if (Platform.isIOS) ...[
-            _AppleButton(loading: _appleLoading, onTap: _appleSignIn),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Email Button ──────────────────────────────────────────────────
-          _EmailButton(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SignUpScreen()),
+            Text(
+              _isSignUp ? 'Create account' : 'Welcome back',
+              style: AppTextStyles.headingMedium,
             ),
-          ),
+            const SizedBox(height: 4),
+            Text(
+              _isSignUp
+                  ? 'Your data stays private and is only visible to you.'
+                  : 'Good to have you back.',
+              style: AppTextStyles.caption
+                  .copyWith(color: AppColors.secondaryText),
+            ),
+            const SizedBox(height: 22),
 
-          const SizedBox(height: 20),
+            // TEMP: Google/Apple auth disabled for testing — restore block below
+            // when Google + Apple providers are configured in Supabase Dashboard.
+            //
+            // _GoogleButton(loading: _googleLoading, onTap: _googleSignIn),
+            // const SizedBox(height: 12),
+            // if (Platform.isIOS) ...[
+            //   _AppleButton(loading: _appleLoading, onTap: _appleSignIn),
+            //   const SizedBox(height: 12),
+            // ],
+            // _OrDivider(),
+            // const SizedBox(height: 16),
+            // END TEMP disabled block
 
-          // ── Legal text ────────────────────────────────────────────────────
-          Center(
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.secondaryText, fontSize: 11),
-                children: [
-                  const TextSpan(
-                      text: 'By continuing you agree to our '),
-                  TextSpan(
-                    text: 'Terms of Service',
-                    style: const TextStyle(
-                        color: AppColors.primaryAccent,
-                        decoration: TextDecoration.underline),
-                    recognizer: TapGestureRecognizer()..onTap = _openTerms,
+            // ── Email confirmation banner ───────────────────────────────────
+            if (_emailConfirmationPending) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.primaryAccent.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  'Check your email to confirm your account, then sign in here.',
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.primaryAccent),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // ── Email field ────────────────────────────────────────────────
+            _label('Email'),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textCapitalization: TextCapitalization.none,
+              textInputAction: TextInputAction.next,
+              style: AppTextStyles.body,
+              onChanged: (_) => setState(() {
+                _emailError = null;
+                _generalError = null;
+                _emailConfirmationPending = false;
+              }),
+              decoration: _inputDecoration(
+                hint: 'you@example.com',
+                errorText: _emailError,
+              ),
+            ),
+            if (_emailError != null) _errorText(_emailError!),
+            const SizedBox(height: 16),
+
+            // ── Password field ─────────────────────────────────────────────
+            _label('Password'),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _passwordCtrl,
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              style: AppTextStyles.body,
+              onChanged: (_) => setState(() {
+                _passwordError = null;
+                _generalError = null;
+              }),
+              decoration: _inputDecoration(
+                hint: '••••••••',
+                errorText: _passwordError,
+                suffix: GestureDetector(
+                  onTap: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  child: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.secondaryText,
+                    size: 20,
                   ),
-                  const TextSpan(text: ' and '),
-                  TextSpan(
-                    text: 'Privacy Policy',
-                    style: const TextStyle(
-                        color: AppColors.primaryAccent,
-                        decoration: TextDecoration.underline),
-                    recognizer: TapGestureRecognizer()..onTap = _openPrivacy,
-                  ),
-                  const TextSpan(text: '.'),
-                ],
+                ),
               ),
             ),
-          ),
+            if (_passwordError != null) _errorText(_passwordError!),
+            const SizedBox(height: 22),
 
-          const SizedBox(height: 16),
-
-          // ── Already have account ──────────────────────────────────────────
-          Center(
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SignInScreen()),
+            // ── General error banner ───────────────────────────────────────
+            if (_generalError != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.destructive.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.destructive.withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  _generalError!,
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.destructive),
+                ),
               ),
+              const SizedBox(height: 16),
+            ],
+
+            // ── Primary button ──────────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryAccent,
+                  disabledBackgroundColor:
+                      AppColors.primaryAccent.withValues(alpha: 0.5),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.black87),
+                      )
+                    : Text(
+                        _isSignUp ? 'Create account' : 'Sign in',
+                        style: AppTextStyles.buttonLabel,
+                      ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ── Legal text ─────────────────────────────────────────────────
+            Center(
               child: RichText(
+                textAlign: TextAlign.center,
                 text: TextSpan(
                   style: AppTextStyles.caption
-                      .copyWith(color: AppColors.secondaryText),
-                  children: const [
-                    TextSpan(text: 'Already have an account? '),
+                      .copyWith(color: AppColors.secondaryText, fontSize: 11),
+                  children: [
+                    const TextSpan(text: 'By continuing you agree to our '),
                     TextSpan(
-                      text: 'Sign in',
-                      style: TextStyle(
-                        color: AppColors.primaryAccent,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      text: 'Terms of Service',
+                      style: const TextStyle(
+                          color: AppColors.primaryAccent,
+                          decoration: TextDecoration.underline),
+                      recognizer: TapGestureRecognizer()..onTap = _openTerms,
                     ),
+                    const TextSpan(text: ' and '),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: const TextStyle(
+                          color: AppColors.primaryAccent,
+                          decoration: TextDecoration.underline),
+                      recognizer: TapGestureRecognizer()..onTap = _openPrivacy,
+                    ),
+                    const TextSpan(text: '.'),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 16),
+
+            // ── Sign-in / Sign-up toggle ────────────────────────────────────
+            Center(
+              child: GestureDetector(
+                onTap: _toggleMode,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: RichText(
+                    text: TextSpan(
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.secondaryText),
+                      children: [
+                        TextSpan(
+                          text: _isSignUp
+                              ? 'Already have an account? '
+                              : "Don't have an account? ",
+                        ),
+                        TextSpan(
+                          text: _isSignUp ? 'Sign in' : 'Sign up',
+                          style: const TextStyle(
+                            color: AppColors.primaryAccent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  Widget _label(String t) =>
+      Text(t, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600));
+
+  Widget _errorText(String t) => Padding(
+        padding: const EdgeInsets.only(top: 4, left: 2),
+        child: Text(
+          t,
+          style: AppTextStyles.caption
+              .copyWith(color: AppColors.destructive, fontSize: 12),
+        ),
+      );
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    String? errorText,
+    Widget? suffix,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle:
+          AppTextStyles.caption.copyWith(color: AppColors.secondaryText),
+      errorText: null,
+      suffixIcon: suffix != null
+          ? Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: suffix,
+            )
+          : null,
+      isDense: true,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      filled: true,
+      fillColor: AppColors.cardSurface,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: errorText != null ? AppColors.destructive : AppColors.divider,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: errorText != null
+              ? AppColors.destructive
+              : AppColors.primaryAccent,
+          width: 1.5,
+        ),
       ),
     );
   }
 }
 
-// ── Google Button ─────────────────────────────────────────────────────────────
+// ── PRESERVED — Google + Apple button widgets (DO NOT DELETE) ─────────────────
+// These are kept here so they can be restored without a rewrite.
+// To restore:
+//   1. Remove the 'ignore_for_file: unused_element' suppress below
+//   2. Re-import 'signin_screen.dart' and 'signup_screen.dart'
+//   3. Uncomment the call sites in _buildBottomPanel()
+//   4. Uncomment _googleSignIn(), _appleSignIn(), and the loading state fields
+//
+// ignore: unused_element
 class _GoogleButton extends StatelessWidget {
   final bool loading;
   final VoidCallback onTap;
@@ -341,12 +642,13 @@ class _GoogleButton extends StatelessWidget {
       color: Colors.white,
       child: loading
           ? const SizedBox(
-              width: 20, height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black54))
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.black54))
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Google "G" logo using coloured squares
                 _GoogleLogo(),
                 const SizedBox(width: 12),
                 const Text(
@@ -363,6 +665,7 @@ class _GoogleButton extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _GoogleLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -379,39 +682,28 @@ class _GoogleLogoPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw a simple "G" in Google colours
     final paint = Paint()..style = PaintingStyle.fill;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Blue arc (top-right)
     paint.color = const Color(0xFF4285F4);
     canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
         -1.57, 1.57, true, paint);
-
-    // Red arc (bottom-right)
     paint.color = const Color(0xFFEA4335);
     canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
         0, 1.57, true, paint);
-
-    // Yellow arc (bottom-left)
     paint.color = const Color(0xFFFBBC05);
     canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
         1.57, 1.57, true, paint);
-
-    // Green arc (top-left)
     paint.color = const Color(0xFF34A853);
     canvas.drawArc(Rect.fromCircle(center: center, radius: radius),
         3.14, 1.57, true, paint);
-
-    // White center circle
     paint.color = Colors.white;
     canvas.drawCircle(center, radius * 0.62, paint);
-
-    // Blue right bar (the horizontal part of G)
     paint.color = const Color(0xFF4285F4);
     canvas.drawRect(
-      Rect.fromLTWH(center.dx, center.dy - radius * 0.18, radius, radius * 0.36),
+      Rect.fromLTWH(
+          center.dx, center.dy - radius * 0.18, radius, radius * 0.36),
       paint,
     );
   }
@@ -420,7 +712,7 @@ class _GoogleLogoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ── Apple Button ──────────────────────────────────────────────────────────────
+// ignore: unused_element
 class _AppleButton extends StatelessWidget {
   final bool loading;
   final VoidCallback onTap;
@@ -434,8 +726,10 @@ class _AppleButton extends StatelessWidget {
       borderColor: const Color(0xFF333333),
       child: loading
           ? const SizedBox(
-              width: 20, height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70))
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white70))
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -455,34 +749,7 @@ class _AppleButton extends StatelessWidget {
   }
 }
 
-// ── Email Button ──────────────────────────────────────────────────────────────
-class _EmailButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _EmailButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return _AuthButton(
-      onTap: onTap,
-      color: Colors.transparent,
-      borderColor: AppColors.primaryAccent,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.mail_outline_rounded,
-              color: AppColors.primaryAccent, size: 20),
-          const SizedBox(width: 10),
-          Text(
-            'Continue with email',
-            style: AppTextStyles.body.copyWith(color: AppColors.primaryAccent),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Generic auth button ───────────────────────────────────────────────────────
+// ignore: unused_element
 class _AuthButton extends StatelessWidget {
   final Widget child;
   final Color color;

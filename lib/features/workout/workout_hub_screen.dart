@@ -8,6 +8,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/services/workout_service.dart';
 import '../../core/services/workout_session_provider.dart';
 import '../../models/workout_model.dart';
+import '../../widgets/primary_button.dart';
 import 'active_workout_screen.dart';
 import 'workout_planner_screen.dart';
 
@@ -135,7 +136,7 @@ class _WorkoutHubScreenState extends State<WorkoutHubScreen> {
                         ),
                       )
                     else if (_recent.isEmpty)
-                      const _EmptyHistory()
+                      _EmptyHistory(onStart: _startWorkout)
                     else
                       ..._recent.map((w) => _WorkoutHistoryCard(workout: w)),
 
@@ -272,32 +273,27 @@ class _ActiveSessionBanner extends StatelessWidget {
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory();
+  final VoidCallback onStart;
+  const _EmptyHistory({required this.onStart});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.history_rounded,
-                size: 36, color: AppColors.divider),
-            const SizedBox(height: 12),
-            Text('No workouts yet',
-                style: AppTextStyles.caption),
-            const SizedBox(height: 4),
-            Text('Your history will appear here.',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.divider)),
-          ],
+    return Column(
+      children: [
+        const SizedBox(height: 48),
+        const Icon(Icons.fitness_center_outlined,
+            color: Colors.white24, size: 56),
+        const SizedBox(height: 16),
+        Text('No workouts yet', style: AppTextStyles.headingSmall),
+        const SizedBox(height: 8),
+        Text(
+          'Start your first session and NutriTrack will track your progress automatically.',
+          style: AppTextStyles.body.copyWith(color: Colors.white54),
+          textAlign: TextAlign.center,
         ),
-      ),
+        const SizedBox(height: 28),
+        PrimaryButton(label: 'Start Workout', onTap: onStart),
+      ],
     );
   }
 }

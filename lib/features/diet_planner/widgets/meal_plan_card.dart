@@ -3,16 +3,20 @@
 // Expandable/collapsible. "Log This Meal" triggers atomic batch insert.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../models/meal_plan_result.dart';
+import '../../../../models/user_model.dart';
 import '../../../../core/services/diet_planner_service.dart';
+import '../../dashboard/dashboard_provider.dart';
 
 class MealPlanCard extends StatefulWidget {
   final PlannedMeal meal;
   final void Function()? onLogged;
+  final UserModel? user; // optional — used to refresh DashboardProvider after logging
 
-  const MealPlanCard({super.key, required this.meal, this.onLogged});
+  const MealPlanCard({super.key, required this.meal, this.onLogged, this.user});
 
   @override
   State<MealPlanCard> createState() => _MealPlanCardState();
@@ -31,6 +35,10 @@ class _MealPlanCardState extends State<MealPlanCard> {
       if (!mounted) return;
       setState(() => widget.meal.isLogged = true);
       widget.onLogged?.call();
+      // Refresh dashboard so the calorie ring reflects the newly logged meal
+      if (widget.user != null && context.mounted) {
+        context.read<DashboardProvider>().refresh(widget.user!);
+      }
       final mealLabel =
           widget.meal.mealType[0].toUpperCase() + widget.meal.mealType.substring(1);
       ScaffoldMessenger.of(context).showSnackBar(

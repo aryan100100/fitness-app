@@ -1,20 +1,26 @@
 // [HEALTH APP] — Food Search Service
-// Orchestrates 4 tiers of food data:
-//   Tier 0 — Recent foods from Supabase (instant)
-//   Tier 1 — USDA FoodData Central (whole foods, lab-measured)
-//   Tier 2 — Nutritionix (branded + restaurant foods)
-//   Tier 3 — Open Food Facts (international fallback, community data)
-//   Local  — Indian foods JSON (offline, instant)
-// Each tier has independent try/catch — one error never blocks others.
+// Orchestrates 3 tiers of food data, all running in parallel:
+//   Tier 1 — USDA FoodData Central (generic foods, lab-measured)
+//   Tier 2 — Indian foods JSON (offline, instant — indian_foods.json + indian_packaged_foods.json)
+//   Tier 3 — Open Food Facts (packaged/international foods)
+//
+// Architecture:
+//   • All 3 tiers run concurrently via Future.wait — no tier blocks another
+//   • Each tier has independent error handling — one failure never blocks others
+//   • Results sorted: Indian first → USDA → Open Food Facts
+//   • In-memory LRU cache (NutritionCache) prevents redundant API calls
+//   • 5-second timeout on every HTTP call
 
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/food_search_result.dart';
 import '../../models/food_log_model.dart';
+import '../nutrition/providers/usda_provider.dart';
+import '../nutrition/providers/open_food_facts_provider.dart';
 
 class FoodSearchService {
   FoodSearchService._();
@@ -22,51 +28,46 @@ class FoodSearchService {
 
   SupabaseClient get _client => Supabase.instance.client;
 
-  // Cached Indian foods list (loaded once)
-  List<FoodSearchResult>? _indianFoodsCache;
+  // Provider singletons
+  final USDAProvider _usda = USDAProvider.instance;
+  final OpenFoodFactsProvider _off = OpenFoodFactsProvider.instance;
 
-  // ---------------------------------------------------------------------------
-  // Master search — orchestrates all tiers
-  // ---------------------------------------------------------------------------
-  Future<List<FoodSearchResult>> search(
-      String query, String userId) async {
+  // Cached Indian foods (loaded once from asset bundle)
+  List<FoodSearchResult>? _indianFoodsCache;
+  List<FoodSearchResult>? _indianPackagedCache;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Master search — all 3 tiers in parallel
+  // ─────────────────────────────────────────────────────────────────────────────
+  Future<List<FoodSearchResult>> search(String query, String userId) async {
     if (query.trim().length < 2) return [];
 
-    // Tier 1 + 2 in parallel
+    debugPrint('[SEARCH] Query: "$query"');
+
+    // Run all 3 tiers concurrently
     final futures = await Future.wait([
       _searchUSDA(query),
-      _searchNutritionix(query),
       _searchIndianLocal(query),
+      _searchOpenFoodFacts(query),
     ]);
 
-    final usda         = futures[0];
-    final nutritionix  = futures[1];
-    final indian       = futures[2];
+    final usda   = futures[0];
+    final indian = futures[1];
+    final off    = futures[2];
 
-    // Merge and deduplicate Tier 1 + 2
-    final merged = _deduplicate([...usda, ...nutritionix]);
+    // Merge with priority: Indian first → USDA → OFF
+    final combined = <FoodSearchResult>[...indian, ...usda, ...off];
 
-    // Add Tier 3 (Open Food Facts) only if fewer than 5 results
-    List<FoodSearchResult> openFF = [];
-    if (merged.length < 5) {
-      openFF = await _searchOpenFoodFacts(query);
-    }
+    // Deduplicate by normalized name
+    final ranked = _deduplicate(combined);
 
-    // Final ranked list:
-    // USDA → Nutritionix → Indian local → OpenFoodFacts
-    final ranked = <FoodSearchResult>[
-      ...merged.where((r) => r.source == FoodSource.usda),
-      ...merged.where((r) => r.source == FoodSource.nutritionix),
-      ...indian,
-      ...openFF,
-    ];
-
+    debugPrint('[SEARCH] Results: indian=${indian.length} usda=${usda.length} off=${off.length} total=${ranked.length.clamp(0, 20)}');
     return ranked.take(20).toList();
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tier 0 — Recent foods (last 8 distinct, by name)
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────────
   Future<List<FoodLogModel>> getRecentFoods(
       String userId, {int limit = 8}) async {
     try {
@@ -86,23 +87,25 @@ class FoodSearchService {
         }
       }
       return result;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SEARCH] getRecentFoods error: $e');
       return [];
     }
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tier 0 — Usual foods (top 5 by log frequency)
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────────
   Future<List<FoodLogModel>> getUsualFoods(
       String userId, {int limit = 5}) async {
     try {
       final data = await _client
           .from('food_logs')
-          .select('food_name, calories, protein_g, carbs_g, fat_g, fibre_g, quantity_g, food_source')
+          .select(
+              'food_name, calories, protein_g, carbs_g, fat_g, fibre_g, quantity_g, food_source')
           .eq('user_id', userId);
 
-      final counts = <String, int>{};
+      final counts  = <String, int>{};
       final samples = <String, FoodLogModel>{};
 
       for (final row in data as List) {
@@ -114,177 +117,53 @@ class FoodSearchService {
           'meal_type': 'snack',
           'is_photo_estimate': false,
         });
-        counts[model.foodName] = (counts[model.foodName] ?? 0) + 1;
+        counts[model.foodName]  = (counts[model.foodName] ?? 0) + 1;
         samples[model.foodName] = model;
       }
 
       final sorted = counts.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
 
-      return sorted
-          .take(limit)
-          .map((e) => samples[e.key]!)
-          .toList();
-    } catch (_) {
+      return sorted.take(limit).map((e) => samples[e.key]!).toList();
+    } catch (e) {
+      debugPrint('[SEARCH] getUsualFoods error: $e');
       return [];
     }
   }
 
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────────
   // Tier 1 — USDA FoodData Central
-  // ---------------------------------------------------------------------------
+  // Endpoint: /fdc/v1/foods/search
+  // dataType includes Foundation, SR Legacy, Survey FNDDS, Branded
+  // ─────────────────────────────────────────────────────────────────────────────
   Future<List<FoodSearchResult>> _searchUSDA(String query) async {
     try {
-      final apiKey = dotenv.env['USDA_API_KEY'] ?? '';
-      if (apiKey.isEmpty) return [];
-
-      final uri = Uri.parse(
-        'https://api.nal.usda.gov/fdc/v1/foods/search'
-        '?query=${Uri.encodeComponent(query)}'
-        '&api_key=$apiKey'
-        '&dataType=Foundation,SR%20Legacy'
-        '&pageSize=8',
-      );
-
-      final response = await http.get(uri).timeout(const Duration(seconds: 5));
-      if (response.statusCode != 200) return [];
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final foods = json['foods'] as List? ?? [];
-
-      return foods.map<FoodSearchResult>((f) {
-        final nutrients = (f['foodNutrients'] as List? ?? []);
-        double cal = 0, prot = 0, carbs = 0, fat = 0, fibre = 0;
-        for (final n in nutrients) {
-          final idVal = n['nutrientId'] as int? ?? 0;
-          final val = (n['value'] as num?)?.toDouble() ?? 0;
-          if (idVal == 1008) cal = val;
-          if (idVal == 1003) prot = val;
-          if (idVal == 1005) carbs = val;
-          if (idVal == 1004) fat = val;
-          if (idVal == 1079) fibre = val;
-        }
-        return FoodSearchResult(
-          foodName: f['description'] as String? ?? '',
-          servingSizeG: 100,
-          caloriesPer100g: cal,
-          proteinPer100g: prot,
-          carbsPer100g: carbs,
-          fatPer100g: fat,
-          fibrePer100g: fibre,
-          source: FoodSource.usda,
-        );
-      }).where((r) => r.foodName.isNotEmpty && r.caloriesPer100g > 0).toList();
-    } catch (_) {
+      final results = await _usda.searchFoods(query);
+      return results.map((f) => f.toFoodSearchResult()).toList();
+    } catch (e) {
+      debugPrint('[SEARCH] USDA tier error: $e');
       return [];
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Tier 2 — Nutritionix
-  // ---------------------------------------------------------------------------
-  Future<List<FoodSearchResult>> _searchNutritionix(String query) async {
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Tier 2 — Indian foods JSON (offline, instant)
+  // Searches both indian_foods.json and indian_packaged_foods.json
+  // ─────────────────────────────────────────────────────────────────────────────
+  Future<List<FoodSearchResult>> _searchIndianLocal(String query) async {
     try {
-      final appId  = dotenv.env['NUTRITIONIX_APP_ID'] ?? '';
-      final appKey = dotenv.env['NUTRITIONIX_API_KEY'] ?? '';
-      if (appId.isEmpty || appKey.isEmpty) return [];
-
-      final uri = Uri.parse(
-          'https://trackapi.nutritionix.com/v2/search/instant?query=${Uri.encodeComponent(query)}');
-
-      final response = await http.get(uri, headers: {
-        'x-app-id': appId,
-        'x-app-key': appKey,
-        'Content-Type': 'application/json',
-      }).timeout(const Duration(seconds: 5));
-
-      if (response.statusCode != 200) return [];
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final branded = json['branded'] as List? ?? [];
-      final common  = json['common']  as List? ?? [];
-      final all = [...common.take(4), ...branded.take(4)];
-
-      return all.map<FoodSearchResult>((item) {
-        final servingWt   = (item['serving_weight_grams'] as num?)?.toDouble() ?? 100;
-        final servingCal  = (item['nf_calories'] as num?)?.toDouble() ?? 0;
-
-        // Convert to per-100g values (Nutritionix returns per-serving)
-        final factor = servingWt > 0 ? 100 / servingWt : 1;
-
-        return FoodSearchResult(
-          foodName: item['food_name'] as String? ?? '',
-          servingSizeG: servingWt,
-          caloriesPer100g: servingCal * factor,
-          proteinPer100g:
-              ((item['nf_protein'] as num?)?.toDouble() ?? 0) * factor,
-          carbsPer100g:
-              ((item['nf_total_carbohydrate'] as num?)?.toDouble() ?? 0) *
-                  factor,
-          fatPer100g:
-              ((item['nf_total_fat'] as num?)?.toDouble() ?? 0) * factor,
-          fibrePer100g:
-              ((item['nf_dietary_fiber'] as num?)?.toDouble() ?? 0) * factor,
-          source: FoodSource.nutritionix,
-        );
-      }).where(
-          (r) => r.foodName.isNotEmpty && r.caloriesPer100g > 0).toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Tier 3 — Open Food Facts (fallback)
-  // ---------------------------------------------------------------------------
-  Future<List<FoodSearchResult>> _searchOpenFoodFacts(
-      String query) async {
-    try {
-      final uri = Uri.parse(
-        'https://world.openfoodfacts.org/cgi/search.pl'
-        '?search_terms=${Uri.encodeComponent(query)}'
-        '&json=1&page_size=5'
-        '&fields=product_name,nutriments',
-      );
-
-      final response = await http.get(uri).timeout(const Duration(seconds: 6));
-      if (response.statusCode != 200) return [];
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final products = json['products'] as List? ?? [];
-
-      return products.map<FoodSearchResult>((p) {
-        final n = p['nutriments'] as Map<String, dynamic>? ?? {};
-        return FoodSearchResult(
-          foodName: p['product_name'] as String? ?? '',
-          servingSizeG: 100,
-          caloriesPer100g:   (n['energy-kcal_100g'] as num?)?.toDouble() ?? 0,
-          proteinPer100g:    (n['proteins_100g']    as num?)?.toDouble() ?? 0,
-          carbsPer100g:      (n['carbohydrates_100g'] as num?)?.toDouble() ?? 0,
-          fatPer100g:        (n['fat_100g']          as num?)?.toDouble() ?? 0,
-          fibrePer100g:      (n['fiber_100g']        as num?)?.toDouble() ?? 0,
-          source: FoodSource.openfoodfacts,
-        );
-      }).where(
-          (r) => r.foodName.isNotEmpty && r.caloriesPer100g > 0).toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Local — Indian foods JSON (offline, instant)
-  // ---------------------------------------------------------------------------
-  Future<List<FoodSearchResult>> _searchIndianLocal(
-      String query) async {
-    try {
-      final all = await _loadIndianFoods();
       final q = query.toLowerCase();
-      return all
-          .where((f) => f.foodName.toLowerCase().contains(q))
-          .take(5)
-          .toList();
-    } catch (_) {
+      final generic  = await _loadIndianFoods();
+      final packaged = await _loadIndianPackaged();
+
+      final hits = <FoodSearchResult>[
+        ...generic.where((f) => f.foodName.toLowerCase().contains(q)),
+        ...packaged.where((f) => f.foodName.toLowerCase().contains(q)),
+      ];
+
+      return hits.take(6).toList();
+    } catch (e) {
+      debugPrint('[SEARCH] Indian local error: $e');
       return [];
     }
   }
@@ -295,23 +174,71 @@ class FoodSearchService {
       final raw = await rootBundle.loadString('assets/indian_foods.json');
       final list = jsonDecode(raw) as List;
       _indianFoodsCache = list
-          .map((e) => FoodSearchResult.fromJson(e,
-              source: FoodSource.indianLocal))
+          .map((e) => FoodSearchResult.fromJson(e, source: FoodSource.indianLocal))
           .toList();
       return _indianFoodsCache!;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SEARCH] Failed to load indian_foods.json: $e');
       return [];
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Deduplicate merged results by normalised food name
-  // ---------------------------------------------------------------------------
+  Future<List<FoodSearchResult>> _loadIndianPackaged() async {
+    if (_indianPackagedCache != null) return _indianPackagedCache!;
+    try {
+      final raw = await rootBundle.loadString('assets/indian_packaged_foods.json');
+      final list = jsonDecode(raw) as List;
+      _indianPackagedCache = list.map<FoodSearchResult>((e) {
+        final p = e['per_100g'] as Map<String, dynamic>? ?? {};
+        return FoodSearchResult(
+          foodName:        e['name']     as String? ?? '',
+          servingSizeG:   (e['serving_size_g'] as num?)?.toDouble() ?? 100,
+          caloriesPer100g: _d(p['calories']),
+          proteinPer100g:  _d(p['protein_g']),
+          carbsPer100g:    _d(p['carbs_g']),
+          fatPer100g:      _d(p['fat_g']),
+          fibrePer100g:    _d(p['fibre_g']),
+          brand:           e['brand']    as String?,
+          barcode:         e['barcode']  as String?,
+          source: FoodSource.indianLocal,
+        );
+      }).where((f) => f.foodName.isNotEmpty).toList();
+      return _indianPackagedCache!;
+    } catch (e) {
+      debugPrint('[SEARCH] Failed to load indian_packaged_foods.json: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Tier 3 — Open Food Facts
+  // ─────────────────────────────────────────────────────────────────────────────
+  Future<List<FoodSearchResult>> _searchOpenFoodFacts(String query) async {
+    try {
+      final results = await _off.searchFoods(query);
+      return results.map((f) => f.toFoodSearchResult()).toList();
+    } catch (e) {
+      debugPrint('[SEARCH] OFF tier error: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Deduplicate by normalized food name (case-insensitive, whitespace-collapsed)
+  // ─────────────────────────────────────────────────────────────────────────────
   List<FoodSearchResult> _deduplicate(List<FoodSearchResult> items) {
     final seen = <String>{};
     return items.where((item) {
-      final key = item.foodName.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+      final key = item.foodName
+          .toLowerCase()
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
       return seen.add(key);
     }).toList();
+  }
+
+  static double _d(dynamic v) {
+    if (v == null) return 0.0;
+    return (v as num).toDouble();
   }
 }

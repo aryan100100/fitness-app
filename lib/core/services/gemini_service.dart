@@ -94,7 +94,7 @@ class GeminiService {
             headers: {'Content-Type': 'application/json'},
             body: requestBody,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 90));
 
       debugPrint('[GEMINI] HTTP status: ${response.statusCode}');
 
@@ -149,8 +149,8 @@ class GeminiService {
       throw GeminiException('All JSON parse attempts exhausted. Raw: $text');
 
     } on TimeoutException {
-      debugPrint('[GEMINI] ❌ Timed out after 30 seconds');
-      throw GeminiException('Request timed out — check your internet connection');
+      debugPrint('[GEMINI] ❌ Timed out after 90 seconds');
+      throw GeminiException('Request timed out — Gemini is taking too long, please try again');
     } catch (e, stack) {
       if (e is GeminiException) rethrow;
       debugPrint('[GEMINI] ❌ Exception: ${e.runtimeType}');
@@ -242,10 +242,14 @@ Respond with ONLY a raw JSON object matching this schema:
 
     try {
       final raw = await _sendJsonPrompt(prompt);
+      debugPrint('[GEMINI] generateRecipeResult: parsing response...');
       return RecipeResult.fromJson(raw);
-    } catch (e) {
-      debugPrint('[GEMINI] generateRecipeResult error: $e');
-      return null;
+    } on GeminiException {
+      rethrow; // Propagate to caller so UI can show real error
+    } catch (e, stack) {
+      debugPrint('[GEMINI] generateRecipeResult unexpected error: $e');
+      debugPrint('[GEMINI] Stack:\n$stack');
+      throw GeminiException('Recipe generation failed: $e');
     }
   }
 

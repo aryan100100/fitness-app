@@ -47,9 +47,9 @@ class _CapturePhotoScreenState extends State<CapturePhotoScreen> {
     try {
       final picked = await _picker.pickImage(
         source: source,
-        imageQuality: 85,
-        maxWidth: 1200,
-        maxHeight: 1600,
+        imageQuality: 75,
+        maxWidth: 1920,
+        maxHeight: 1920,
       );
       if (picked != null && mounted) {
         setState(() => _selectedFile = File(picked.path));
@@ -69,6 +69,23 @@ class _CapturePhotoScreenState extends State<CapturePhotoScreen> {
 
   Future<void> _confirmUpload() async {
     if (_selectedFile == null) return;
+
+    // ── Size guard ────────────────────────────────────────────────────
+    final bytes = await _selectedFile!.readAsBytes();
+    final sizeKb = bytes.lengthInBytes / 1024;
+    if (sizeKb > 5120) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo is too large. Please try a different photo.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.cardSurface,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isUploading = true);
     try {
       await ProgressPhotoService.instance.savePhoto(

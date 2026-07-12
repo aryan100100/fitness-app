@@ -5,18 +5,21 @@
 
 import 'package:flutter/material.dart';
 import '../../../../core/services/auto_adjustment_service.dart';
+import '../../../../core/utils/weight_utils.dart';
 import 'adjustment_card.dart';
 
 class GoalProgressCard extends StatefulWidget {
   final GoalProgressSummary progress;
   final VoidCallback onDismiss;
   final Future<void> Function(String option) onApply;
+  final String weightUnit;
 
   const GoalProgressCard({
     super.key,
     required this.progress,
     required this.onDismiss,
     required this.onApply,
+    required this.weightUnit,
   });
 
   @override
@@ -45,7 +48,7 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Progress summary
-          _ProgressSummary(progress: p, accentColor: borderColor),
+          _ProgressSummary(progress: p, accentColor: borderColor, weightUnit: widget.weightUnit),
           const SizedBox(height: 16),
 
           // Options
@@ -65,7 +68,7 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
             icon: Icons.track_changes_rounded,
             title: 'Adjust my goal amount',
             subtitle: 'Change my target weight to what I can realistically reach at my current pace.',
-            detail: 'Suggested target: ${p.suggestedNewTargetWeight.toStringAsFixed(1)} kg',
+            detail: 'Suggested target: ${formatWeight(p.suggestedNewTargetWeight, widget.weightUnit)}',
             onTap: (id) => setState(() => _selected = id),
           ),
           const SizedBox(height: 8),
@@ -106,9 +109,10 @@ class _GoalProgressCardState extends State<GoalProgressCard> {
 class _ProgressSummary extends StatelessWidget {
   final GoalProgressSummary progress;
   final Color accentColor;
+  final String weightUnit;
 
   const _ProgressSummary(
-      {required this.progress, required this.accentColor});
+      {required this.progress, required this.accentColor, required this.weightUnit});
 
   @override
   Widget build(BuildContext context) {
@@ -116,13 +120,13 @@ class _ProgressSummary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _StatRow('Starting weight', '${p.startingWeight.toStringAsFixed(1)} kg'),
+        _StatRow('Starting weight', formatWeight(p.startingWeight, weightUnit)),
         const SizedBox(height: 4),
-        _StatRow('Current weight (7-day avg)', '${p.currentAvg.toStringAsFixed(1)} kg'),
+        _StatRow('Current weight (7-day avg)', formatWeight(p.currentAvg, weightUnit)),
         const SizedBox(height: 4),
         _StatRow(
           'Change so far',
-          '${p.changeKg > 0 ? '-' : '+'}${p.changeKg.abs().toStringAsFixed(1)} kg of ${p.totalGoalKg.toStringAsFixed(1)} kg goal',
+          '${p.changeKg > 0 ? '-' : '+'}${formatWeight(p.changeKg.abs(), weightUnit)} of ${formatWeight(p.totalGoalKg, weightUnit)} goal',
           valueColor: accentColor,
         ),
         const SizedBox(height: 10),

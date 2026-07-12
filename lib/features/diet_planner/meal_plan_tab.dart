@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_text_styles.dart';
 import '../../../core/services/diet_planner_service.dart';
 import '../../../core/services/gemini_service.dart';
 import '../../../core/services/pantry_service.dart';
@@ -36,6 +37,16 @@ class _MealPlanTabState extends State<MealPlanTab>
   bool _slowThinking = false;
   Timer? _slowTimer;
 
+  // Cache metadata
+  bool _planFromCache = false;    // true when plan was loaded from DB, not generated now
+  DateTime? _planLoadedAt;        // created_at of the cached row (null after fresh gen)
+
+  // Regeneration guard
+  bool _forceRegenerate = false;  // must be true for _generate() to override an existing plan
+
+  // Error messaging — set in _generate() catch block
+  String? _errorMessage;
+
   String get _userId =>
       Supabase.instance.client.auth.currentUser?.id ?? '';
 
@@ -64,11 +75,20 @@ class _MealPlanTabState extends State<MealPlanTab>
     final cached = await DietPlannerService.instance.loadTodaysPlan(_userId);
     if (!mounted) return;
     if (cached != null) {
-      setState(() { _state = _PlanState.loaded; _plan = cached; });
+      setState(() {
+        _state = _PlanState.loaded;
+        _plan = cached;
+        _planFromCache = true;
+        _planLoadedAt = DietPlannerService.instance.lastLoadedAt;
+      });
     }
   }
 
   Future<void> _generate() async {
+    // Safety net: never call Gemini if a plan already exists and this
+    // isn't a forced regeneration (i.e. user confirmed via _regenerate).
+    if (_plan != null && !_forceRegenerate) return;
+
     setState(() {
       _state = _PlanState.loading;
       _slowThinking = false;
@@ -92,13 +112,26 @@ class _MealPlanTabState extends State<MealPlanTab>
         // Save to Supabase
         await DietPlannerService.instance.savePlan(_userId, result);
         if (!mounted) return;
-        setState(() { _state = _PlanState.loaded; _plan = result; });
+        setState(() {
+          _state = _PlanState.loaded;
+          _plan = result;
+          _planFromCache = false;  // freshly generated — hide the cache label
+          _planLoadedAt = null;
+        });
       } else {
         setState(() => _state = _PlanState.error);
       }
-    } catch (_) {
+    } catch (e) {
       _slowTimer?.cancel();
-      if (mounted) setState(() => _state = _PlanState.error);
+      if (mounted) {
+        final msg = e.toString().toLowerCase().contains('timed out')
+            ? 'Request timed out — check your connection and try again'
+            : 'Unable to generate plan — tap to retry';
+        setState(() {
+          _state = _PlanState.error;
+          _errorMessage = msg;
+        });
+      }
     }
   }
 
@@ -128,7 +161,14 @@ class _MealPlanTabState extends State<MealPlanTab>
         ],
       ),
     );
-    if (ok == true) _generate();
+    if (ok != true) return;
+    // Set force flag so _generate() bypasses the safety-net guard
+    setState(() => _forceRegenerate = true);
+    try {
+      await _generate();
+    } finally {
+      if (mounted) setState(() => _forceRegenerate = false);
+    }
   }
 
   void _openInfoSheet() {
@@ -303,6 +343,21 @@ class _MealPlanTabState extends State<MealPlanTab>
   Widget _buildGenerateButton() {
     return Column(
       children: [
+        const SizedBox(height: 32),
+        const Icon(Icons.restaurant_menu_outlined, color: Colors.white24, size: 52),
+        const SizedBox(height: 16),
+        Text(
+          'Your personalised meal plan',
+          style: AppTextStyles.headingSmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Breakfast, lunch, dinner and snacks — tailored to your calorie and macro targets for today.',
+          style: AppTextStyles.body.copyWith(color: Colors.white54),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -331,8 +386,10 @@ class _MealPlanTabState extends State<MealPlanTab>
   Widget _buildShimmer() {
     return Column(
       children: [
-        // Pseudo-shimmer ghost cards
-        ...List.generate(3, (i) => _ghostCard()),
+        // Labelled ghost cards
+        _ghostCard('Breakfast'),
+        _ghostCard('Lunch'),
+        _ghostCard('Dinner'),
         const SizedBox(height: 16),
         Text(
           _slowThinking
@@ -351,7 +408,7 @@ class _MealPlanTabState extends State<MealPlanTab>
     );
   }
 
-  Widget _ghostCard() => Container(
+  Widget _ghostCard(String label) => Container(
         margin: const EdgeInsets.only(bottom: 14),
         height: 100,
         decoration: BoxDecoration(
@@ -359,13 +416,81 @@ class _MealPlanTabState extends State<MealPlanTab>
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white10),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white24,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 10),
+            Container(
+                height: 10,
+                width: 160,
+                decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(4))),
+            const SizedBox(height: 6),
+            Container(
+                height: 10,
+                width: 100,
+                decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(4))),
+          ],
+        ),
       );
 
   Widget _buildPlanCards() {
     final plan = _plan!;
     return Column(
       children: [
-        ...plan.meals.map((m) => MealPlanCard(meal: m)),
+        // Cache timestamp label — only shown when plan was loaded from DB
+        if (_planFromCache && _planLoadedAt != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Opacity(
+                opacity: 0.6,
+                child: Text(
+                  'Saved plan from '
+                  '${_planLoadedAt!.hour.toString().padLeft(2, '0')}:'
+                  '${_planLoadedAt!.minute.toString().padLeft(2, '0')}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+          ),
+        // ── Daily macro summary bar ────────────────────────────────────────
+        Text('Daily Total',
+            style: AppTextStyles.caption.copyWith(color: Colors.white38)),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _macroPill('${plan.totalCalories.toInt()} kcal', 'Calories',
+                  AppColors.primaryAccent),
+              _macroPill('${plan.totalProtein.toInt()}g', 'Protein', Colors.white),
+              _macroPill('${plan.totalCarbs.toInt()}g', 'Carbs', Colors.white),
+              _macroPill('${plan.totalFat.toInt()}g', 'Fat', Colors.white),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // ── Meal cards ───────────────────────────────────────────────────────
+        ...plan.meals.map((m) => MealPlanCard(meal: m, user: widget.user)),
         const SizedBox(height: 8),
         DailySummaryCard(plan: plan, user: widget.user),
         const SizedBox(height: 16),
@@ -391,6 +516,16 @@ class _MealPlanTabState extends State<MealPlanTab>
     );
   }
 
+  Widget _macroPill(String value, String label, Color valueColor) => Column(
+        children: [
+          Text(value,
+              style: AppTextStyles.headingSmall.copyWith(color: valueColor)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: AppTextStyles.caption.copyWith(color: Colors.white54)),
+        ],
+      );
+
   Widget _buildError() {
     return Center(
       child: Column(
@@ -399,9 +534,10 @@ class _MealPlanTabState extends State<MealPlanTab>
           const Icon(Icons.wifi_tethering_error_rounded,
               color: Colors.white24, size: 48),
           const SizedBox(height: 12),
-          const Text(
-            'Unable to generate — tap to retry',
-            style: TextStyle(color: Colors.white38, fontSize: 14),
+          Text(
+            _errorMessage ?? 'Unable to generate — tap to retry',
+            style: const TextStyle(color: Colors.white38, fontSize: 14),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           OutlinedButton(

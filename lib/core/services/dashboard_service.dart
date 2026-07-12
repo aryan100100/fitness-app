@@ -1,6 +1,8 @@
 // [HEALTH APP] — Dashboard Service
 // All data queries for the dashboard. Each method has its own try/catch
 // so a single error never blocks the rest of the screen from loading.
+// Auth errors (JWT/token expiry) are explicitly rethrown so the global
+// session handler in _AppRouter can redirect the user to WelcomeScreen.
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/dashboard_summary.dart';
@@ -39,6 +41,8 @@ class DashboardService {
         'fat': fat,
         'fibre': fibre,
       };
+    } on AuthException {
+      rethrow; // Auth errors must not be silenced — propagate to _AppRouter
     } catch (_) {
       return {
         'calories': 0, 'protein': 0, 'carbs': 0, 'fat': 0, 'fibre': 0

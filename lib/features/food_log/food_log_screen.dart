@@ -249,7 +249,7 @@ class _FoodLogScreenState extends State<FoodLogScreen> {
               child: Row(
                 children: [
                   const SizedBox(width: 2),
-                  Text('Searching USDA + Nutritionix...',
+                  Text('Searching USDA + Indian + Open Food Facts...',
                       style: AppTextStyles.caption),
                 ],
               ),
@@ -509,6 +509,10 @@ class _SearchResults extends StatelessWidget {
           Divider(color: AppColors.divider, height: 1),
       itemBuilder: (_, i) {
         final food = results[i];
+        final badgeColor = _sourceBadgeColor(food.source);
+        final subtitle = food.brand?.isNotEmpty == true
+            ? food.brand!
+            : food.sourceLabel;
         return GestureDetector(
           onTap: () => onTap(food),
           child: Padding(
@@ -523,10 +527,11 @@ class _SearchResults extends StatelessWidget {
                           style: AppTextStyles.body
                               .copyWith(fontSize: 15,
                                   fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 3),
-                      Text('${food.servingSizeG.round()}g serving',
-                          style: AppTextStyles.caption),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style: AppTextStyles.caption
+                              .copyWith(fontSize: 11)),
+                      const SizedBox(height: 5),
                       Row(
                         children: [
                           _MiniPill('P: ${food.proteinPer100g.round()}g',
@@ -550,7 +555,7 @@ class _SearchResults extends StatelessWidget {
                             fontWeight: FontWeight.bold, fontSize: 16)),
                     Text('kcal/100g', style: AppTextStyles.caption),
                     const SizedBox(height: 4),
-                    _SourceBadge(food.sourceLabel),
+                    _SourceBadge(food.sourceLabel, badgeColor),
                   ],
                 ),
               ],
@@ -561,6 +566,14 @@ class _SearchResults extends StatelessWidget {
     );
   }
 }
+
+// Color mapping helper for source badge
+Color _sourceBadgeColor(FoodSource source) => switch (source) {
+  FoodSource.usda          => const Color(0xFF388E3C), // green
+  FoodSource.indianLocal   => const Color(0xFFE65100), // orange
+  FoodSource.openfoodfacts => const Color(0xFF1976D2), // blue
+  _                        => const Color(0xFF757575), // grey
+};
 
 class _MiniPill extends StatelessWidget {
   final String text;
@@ -584,18 +597,20 @@ class _MiniPill extends StatelessWidget {
 
 class _SourceBadge extends StatelessWidget {
   final String label;
-  const _SourceBadge(this.label);
+  final Color color;
+  const _SourceBadge(this.label, [this.color = const Color(0xFF757575)]);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.divider,
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 0.5),
       ),
       child: Text(label,
-          style: AppTextStyles.caption.copyWith(fontSize: 9)),
+          style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600)),
     );
   }
 }

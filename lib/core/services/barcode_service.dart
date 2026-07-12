@@ -1,15 +1,20 @@
 // [HEALTH APP] — Barcode Service (Feature 10)
 // 4-tier product lookup: user_saved → OFF → Indian DB → Nutritionix
-// All HTTP calls have 5-second timeout. No barcode data sent for on-device decode.
-// Scanning is on-device via mobile_scanner (ML Kit).
+// Tier 1 (OFF) now delegates to OpenFoodFactsProvider for consistency,
+// caching, retry logic, and confidence assessment.
+// All HTTP calls have 5-second timeout. Scanning is on-device via mobile_scanner.
 
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/barcode_product_model.dart';
+import '../nutrition/providers/open_food_facts_provider.dart';
+import '../nutrition/unified_food.dart';
 
 class BarcodeService {
   BarcodeService._();
@@ -21,19 +26,25 @@ class BarcodeService {
   // Cached Indian DB (loaded once from asset)
   List<dynamic>? _indianDbCache;
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // OFF provider (handles caching + retries internally)
+  final OpenFoodFactsProvider _off = OpenFoodFactsProvider.instance;
+
+  // ────────────────────────────────────────────────────────────────────────────
   // MAIN ENTRY — tries tiers in order, returns first hit
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   Future<BarcodeResult> lookupBarcode(String barcode,
       {required String userId}) async {
     // Tier 0 — user's personal saved foods (instant, highest priority)
     final saved = await _lookupUserSaved(userId, barcode);
     if (saved != null) {
       return BarcodeResult(
-          product: saved, found: true, source: 'user_saved', confidence: saved.confidence);
+          product: saved,
+          found: true,
+          source: 'user_saved',
+          confidence: saved.confidence);
     }
 
-    // Tier 1 — Open Food Facts (primary)
+    // Tier 1 — Open Food Facts (via OFFProvider — cached + retried)
     final offProduct = await _lookupOpenFoodFacts(barcode);
     if (offProduct != null) {
       return BarcodeResult(
@@ -43,7 +54,7 @@ class BarcodeService {
           confidence: offProduct.confidence);
     }
 
-    // Tier 2.5 — Indian packaged foods JSON (offline, high accuracy)
+    // Tier 2 — Indian packaged foods JSON (offline, high accuracy)
     final indianProduct = await _lookupIndianDatabase(barcode);
     if (indianProduct != null) {
       return BarcodeResult(
@@ -53,7 +64,7 @@ class BarcodeService {
           confidence: ConfidenceLevel.high);
     }
 
-    // Tier 3 — Nutritionix UPC
+    // Tier 3 — Nutritionix UPC (requires API keys)
     final nixProduct = await _lookupNutritionix(barcode);
     if (nixProduct != null) {
       return BarcodeResult(
@@ -67,9 +78,9 @@ class BarcodeService {
     return BarcodeResult.notFound();
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   // Tier 0 — user's custom_foods table (with barcode column)
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   Future<BarcodeProduct?> _lookupUserSaved(
       String userId, String barcode) async {
     try {
@@ -84,82 +95,75 @@ class BarcodeService {
       if (rows.isEmpty) return null;
       return BarcodeProduct.fromCustomFood(rows.first);
     } catch (e) {
+      debugPrint('[BARCODE] User-saved lookup error: $e');
       return null;
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Tier 1 — Open Food Facts API v2
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
+  // Tier 1 — Open Food Facts (via OFFProvider — caching + retry handled there)
+  // ────────────────────────────────────────────────────────────────────────────
   Future<BarcodeProduct?> _lookupOpenFoodFacts(String barcode) async {
     try {
-      final uri = Uri.parse(
-          'https://world.openfoodfacts.org/api/v2/product/$barcode.json');
-      final res =
-          await http.get(uri, headers: {'User-Agent': 'HealthApp/1.0'}).timeout(_timeout);
+      final UnifiedFood? food = await _off.lookupBarcode(barcode);
+      if (food == null) return null;
 
-      if (res.statusCode != 200) return null;
+      final confidence = switch (food.confidence) {
+        NutritionConfidence.high   => ConfidenceLevel.high,
+        NutritionConfidence.medium => ConfidenceLevel.medium,
+        NutritionConfidence.low    => ConfidenceLevel.low,
+      };
 
-      final body = jsonDecode(res.body) as Map<String, dynamic>;
-      if (body['status'] != 1) return null; // product not found
-
-      final product = body['product'] as Map<String, dynamic>? ?? {};
-      final name = (product['product_name'] as String? ?? '').trim();
-      if (name.isEmpty) return null;
-
-      final confidence = _assessConfidence(product);
-      // Merge the barcode into the product map and construct from it
-      final productWithCode = Map<String, dynamic>.from(product)
-        ..['code'] = barcode;
-      return BarcodeProduct.fromOff(productWithCode, confidence);
+      return BarcodeProduct(
+        barcode:        food.barcode,
+        name:           food.foodName,
+        brand:          food.brand,
+        imageUrl:       food.imageUrl,
+        caloriesPer100g: food.caloriesPer100g,
+        proteinPer100g:  food.proteinPer100g,
+        carbsPer100g:    food.carbsPer100g,
+        fatPer100g:      food.fatPer100g,
+        fibrePer100g:    food.fibrePer100g,
+        servingSizeG:    food.defaultServingG,
+        source:          'off',
+        confidence:      confidence,
+      );
     } catch (e) {
+      debugPrint('[BARCODE] OFF lookup error: $e');
       return null;
     }
   }
 
-  /// Assess confidence from OFF response fields.
-  ConfidenceLevel _assessConfidence(Map<String, dynamic> p) {
-    final score =
-        (p['completeness'] as num? ?? (p['completeness_score'] as num? ?? 0))
-            .toInt();
-    final n = p['nutriments'] as Map<String, dynamic>? ?? {};
-    final hasMacros = n.containsKey('proteins_100g') &&
-        n.containsKey('carbohydrates_100g') &&
-        n.containsKey('fat_100g') &&
-        n.containsKey('energy-kcal_100g');
-
-    if (score >= 75 && hasMacros) return ConfidenceLevel.high;
-    if (score >= 40 || n.isNotEmpty) return ConfidenceLevel.medium;
-    return ConfidenceLevel.low;
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Tier 2.5 — Indian packaged foods offline JSON
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
+  // Tier 2 — Indian packaged foods offline JSON
+  // ────────────────────────────────────────────────────────────────────────────
   Future<BarcodeProduct?> _lookupIndianDatabase(String barcode) async {
     try {
       _indianDbCache ??= jsonDecode(
         await rootBundle.loadString('assets/indian_packaged_foods.json'),
       ) as List<dynamic>;
 
-      final match = _indianDbCache!.cast<Map<String, dynamic>>().firstWhere(
-        (e) => e['barcode'] == barcode,
-        orElse: () => <String, dynamic>{},
-      );
+      final match = _indianDbCache!
+          .cast<Map<String, dynamic>>()
+          .firstWhere(
+            (e) => e['barcode'] == barcode,
+            orElse: () => <String, dynamic>{},
+          );
 
       if (match.isEmpty) return null;
       return BarcodeProduct.fromIndianDb(match);
     } catch (e) {
+      debugPrint('[BARCODE] Indian DB lookup error: $e');
       return null;
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   // Tier 3 — Nutritionix UPC lookup (secondary, paid API)
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   Future<BarcodeProduct?> _lookupNutritionix(String barcode) async {
     try {
-      final appId = dotenv.maybeGet('NUTRITIONIX_APP_ID') ?? '';
+      final appId  = dotenv.maybeGet('NUTRITIONIX_APP_ID') ?? '';
       final appKey = dotenv.maybeGet('NUTRITIONIX_API_KEY') ?? '';
       if (appId.isEmpty || appKey.isEmpty) return null;
 
@@ -171,21 +175,25 @@ class BarcodeService {
         'x-remote-user-id': '0',
       }).timeout(_timeout);
 
-      if (res.statusCode != 200) return null;
+      if (res.statusCode != 200) {
+        debugPrint('[BARCODE] Nutritionix HTTP ${res.statusCode}');
+        return null;
+      }
 
-      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final body  = jsonDecode(res.body) as Map<String, dynamic>;
       final foods = body['foods'] as List?;
       if (foods == null || foods.isEmpty) return null;
 
       return BarcodeProduct.fromNutritionix(foods[0] as Map<String, dynamic>);
     } catch (e) {
+      debugPrint('[BARCODE] Nutritionix lookup error: $e');
       return null;
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   // Save a user-submitted product to custom_foods with the barcode
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   Future<void> saveUserProduct(String userId, BarcodeProduct product,
       {String? productName}) async {
     try {
@@ -202,15 +210,15 @@ class BarcodeService {
         'source': 'barcode_scan',
       });
     } catch (e) {
+      debugPrint('[BARCODE] saveUserProduct error: $e');
       rethrow;
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────────────────────
   // Log a successful scan for analytics (fire-and-forget)
-  // ───────────────────────────────────────────────────────────────────────────
-  Future<void> logScan(
-      String userId, String barcode, String source) async {
+  // ────────────────────────────────────────────────────────────────────────────
+  Future<void> logScan(String userId, String barcode, String source) async {
     try {
       await _client.from('barcode_scan_logs').insert({
         'user_id': userId,

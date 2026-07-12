@@ -99,29 +99,6 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Export feature coming soon 📦'),
-                    backgroundColor: AppColors.cardSurface,
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryAccent,
-                side: const BorderSide(color: AppColors.primaryAccent),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text('Export my data', style: AppTextStyles.body
-                  .copyWith(color: AppColors.primaryAccent)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
               onPressed: _isDeleting ? null : _deleteAllData,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.destructive,

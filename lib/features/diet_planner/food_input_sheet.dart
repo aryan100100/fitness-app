@@ -1,6 +1,6 @@
 // [HEALTH APP] — Food Input Sheet (Bottom Sheet) — v2
 // Uses FoodSearchService (same 4-tier service as food logging screen).
-// Sources: USDA, Nutritionix, Indian local DB, Open Food Facts, Pantry recents.
+// Uses FoodSearchService (3-tier: USDA, Indian local, Open Food Facts).
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -438,11 +438,10 @@ class _ResultRow extends StatelessWidget {
   });
 
   Color _sourceColor() => switch (result.source) {
-    FoodSource.usda         => const Color(0xFF1565C0),
-    FoodSource.nutritionix  => const Color(0xFF6A1B9A),
-    FoodSource.indianLocal  => const Color(0xFFE65100),
-    FoodSource.openfoodfacts => const Color(0xFF2E7D32),
-    _                       => Colors.grey,
+    FoodSource.usda          => const Color(0xFF388E3C), // green
+    FoodSource.indianLocal   => const Color(0xFFE65100), // orange
+    FoodSource.openfoodfacts => const Color(0xFF1976D2), // blue
+    _                        => Colors.grey,
   };
 
   @override

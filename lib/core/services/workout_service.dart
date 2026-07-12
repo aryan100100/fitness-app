@@ -205,6 +205,67 @@ class WorkoutService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // PERSONAL BEST DETECTION
+  // ---------------------------------------------------------------------------
+
+  /// Returns true if [weightKg] at [reps] beats every previously saved set
+  /// for [exerciseName] at the same rep count in the last 90 days.
+  Future<bool> checkIsPB({
+    required String userId,
+    required String exerciseName,
+    required int reps,
+    required double weightKg,
+  }) async {
+    try {
+      final cutoff = _dateStr(DateTime.now().subtract(const Duration(days: 90)));
+      final res = await _client
+          .from('exercise_sets')
+          .select('weight_kg, workouts!inner(user_id, date)')
+          .eq('exercise_name', exerciseName)
+          .eq('reps', reps)
+          .eq('workouts.user_id', userId)
+          .gte('workouts.date', cutoff)
+          .not('weight_kg', 'is', null);
+
+      final rows = res as List;
+      if (rows.isEmpty) return false;
+      final maxPrev = rows.fold<double>(0, (max, row) {
+        final w = (row['weight_kg'] as num?)?.toDouble() ?? 0;
+        return w > max ? w : max;
+      });
+      return weightKg > maxPrev;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Returns the heaviest single set for [exerciseName] in the last 90 days,
+  /// or null if no historical data exists.
+  Future<ExerciseSetModel?> getPersonalBest({
+    required String userId,
+    required String exerciseName,
+  }) async {
+    try {
+      final cutoff = _dateStr(DateTime.now().subtract(const Duration(days: 90)));
+      final res = await _client
+          .from('exercise_sets')
+          .select('*, workouts!inner(user_id, date)')
+          .eq('exercise_name', exerciseName)
+          .eq('workouts.user_id', userId)
+          .gte('workouts.date', cutoff)
+          .not('weight_kg', 'is', null)
+          .order('weight_kg', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (res == null) return null;
+      return ExerciseSetModel.fromJson(res);
+    } catch (_) {
+      return null;
+    }
+  }
+
   String _dateStr(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }

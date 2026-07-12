@@ -3,6 +3,7 @@
 // app settings, logout. Parallel data loading with shimmer loading state.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,6 +14,7 @@ import '../../core/services/streak_service.dart';
 import '../../core/services/progress_photo_service.dart';
 import '../../core/services/supabase_service.dart';
 import '../../models/user_model.dart';
+import '../dashboard/dashboard_provider.dart';
 
 import '../onboarding/onboarding_screen.dart';
 import '../progress_photos/progress_photos_screen.dart';
@@ -423,7 +425,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context,
       MaterialPageRoute(builder: (_) => EditProfileScreen(user: _user)),
     );
-    if (refreshed == true && mounted) _loadAll();
+    if (refreshed == true && mounted) {
+      await _loadAll(); // re-fetches _user from Supabase
+      // Immediately push the updated targets to the dashboard
+      if (mounted) {
+        context.read<DashboardProvider>().refresh(_user);
+      }
+    }
   }
 
   Future<void> _openRecalculate() async {
@@ -432,7 +440,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(
           builder: (_) => RecalculatePlanScreen(user: _user)),
     );
-    if (refreshed == true && mounted) _loadAll();
+    if (refreshed == true && mounted) {
+      await _loadAll(); // re-fetches _user from Supabase
+      // Immediately push the updated targets to the dashboard
+      if (mounted) {
+        context.read<DashboardProvider>().refresh(_user);
+      }
+    }
   }
 
   Future<void> _openProgressPhotos() async {
@@ -1075,34 +1089,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'App',
       children: [
         SettingsRow(
-          icon: Icons.notifications_active_outlined,
-          label: 'Notifications',
-          subtitle: 'Manage in app settings',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Open Settings → Notifications to manage'),
-              backgroundColor: AppColors.cardSurface,
-            ));
-          },
-        ),
-        SettingsRow(
           icon: Icons.lock_outline,
           label: 'Data & Privacy',
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const DataPrivacyScreen()),
           ),
-        ),
-        SettingsRow(
-          icon: Icons.star_outline_rounded,
-          label: 'Rate this app',
-          subtitle: 'Coming soon',
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Rating feature coming soon ⭐'),
-              backgroundColor: AppColors.cardSurface,
-            ));
-          },
         ),
         SettingsRow(
           icon: Icons.share_outlined,

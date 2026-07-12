@@ -26,6 +26,9 @@ class WorkoutSessionProvider extends ChangeNotifier {
   // Overload suggestion cache
   final Map<String, String> _overloadSuggestion = {};
 
+  // Personal best cache: exerciseName → 'Xkg × Y'
+  final Map<String, String> _personalBest = {};
+
   // ---------------------------------------------------------------------------
   // SESSION LIFECYCLE
   // ---------------------------------------------------------------------------
@@ -54,6 +57,7 @@ class WorkoutSessionProvider extends ChangeNotifier {
     _session = null;
     _previousPerf.clear();
     _overloadSuggestion.clear();
+    _personalBest.clear();
     notifyListeners();
   }
 
@@ -112,6 +116,7 @@ class WorkoutSessionProvider extends ChangeNotifier {
       _session = null;
       _previousPerf.clear();
       _overloadSuggestion.clear();
+      _personalBest.clear();
       notifyListeners();
       debugPrint('[WORKOUT] Save complete!');
       return true;
@@ -134,8 +139,9 @@ class WorkoutSessionProvider extends ChangeNotifier {
     ));
     notifyListeners();
 
-    // Fetch previous performance in background
+    // Fetch previous performance and personal best in background
     _fetchPreviousPerf(preset.name, userId);
+    if (!preset.isCardio) _fetchPersonalBest(preset.name, userId);
   }
 
   void removeExercise(int index) {
@@ -225,6 +231,8 @@ class WorkoutSessionProvider extends ChangeNotifier {
   String? getPreviousPerf(String exerciseName) => _previousPerf[exerciseName];
   String? getOverloadSuggestion(String exerciseName) =>
       _overloadSuggestion[exerciseName];
+  String? getPersonalBest(String exerciseName) => _personalBest[exerciseName];
+
 
   Future<void> _fetchPreviousPerf(String exerciseName, String userId) async {
     final lastSets = await WorkoutService.instance.getLastSessionForExercise(
@@ -251,6 +259,17 @@ class WorkoutSessionProvider extends ChangeNotifier {
       _overloadSuggestion[exerciseName] = suggestion.message;
     }
 
+    notifyListeners();
+  }
+
+  Future<void> _fetchPersonalBest(String exerciseName, String userId) async {
+    final pb = await WorkoutService.instance.getPersonalBest(
+      userId: userId,
+      exerciseName: exerciseName,
+    );
+    if (pb == null || pb.weightKg == null || pb.reps == null) return;
+    _personalBest[exerciseName] =
+        '${pb.weightKg!.toStringAsFixed(1)}kg x ${pb.reps}';
     notifyListeners();
   }
 

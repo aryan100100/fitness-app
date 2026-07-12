@@ -33,6 +33,7 @@ class _RecipeTabState extends State<RecipeTab>
   final _textCtrl = TextEditingController();
   _RecipeState _state = _RecipeState.idle;
   RecipeResult? _recipe;
+  String _errorMessage = 'Unable to generate — tap Get Recipe to retry';
   bool _fitMacros = false;
   Timer? _slowTimer;
 
@@ -101,14 +102,31 @@ class _RecipeTabState extends State<RecipeTab>
 
       _slowTimer?.cancel();
       if (!mounted) return;
-      if (result != null) {
-        setState(() { _state = _RecipeState.loaded; _recipe = result; });
-      } else {
-        setState(() => _state = _RecipeState.error);
-      }
-    } catch (_) {
+      setState(() { _state = _RecipeState.loaded; _recipe = result; });
+    } on TimeoutException {
       _slowTimer?.cancel();
-      if (mounted) setState(() => _state = _RecipeState.error);
+      if (mounted) {
+        setState(() {
+          _state = _RecipeState.error;
+          _errorMessage = 'Request timed out — check your internet connection';
+        });
+      }
+    } on GeminiException catch (e) {
+      _slowTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          _state = _RecipeState.error;
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      _slowTimer?.cancel();
+      if (mounted) {
+        setState(() {
+          _state = _RecipeState.error;
+          _errorMessage = 'Unexpected error: $e';
+        });
+      }
     }
   }
 
@@ -287,10 +305,19 @@ class _RecipeTabState extends State<RecipeTab>
                   const Icon(Icons.error_outline,
                       color: Colors.white38, size: 40),
                   const SizedBox(height: 10),
-                  const Text(
-                    'Unable to generate — tap Get Recipe to retry',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      _errorMessage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white38, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _generate,
+                    child: const Text('Retry',
+                        style: TextStyle(color: AppColors.primaryAccent)),
                   ),
                 ],
               ),

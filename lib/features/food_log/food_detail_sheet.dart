@@ -205,9 +205,38 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
               // Food name
               Text(widget.food.foodName,
                   style: AppTextStyles.headingMedium),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
+
+              // ── Meal context banner ──────────────────────────────────────
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: AppColors.primaryAccent.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.restaurant_outlined,
+                            size: 13, color: AppColors.primaryAccent),
+                        const SizedBox(width: 5),
+                        Text('Adding to: ${widget.mealLabel}',
+                            style: AppTextStyles.caption.copyWith(
+                                color: AppColors.primaryAccent,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
 
               // Source badge
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 3),
@@ -311,32 +340,61 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Macro mini-bars
-              _MacroRow(
-                  label: 'Protein',
-                  value: _protein,
-                  color: AppColors.proteinBar),
-              const SizedBox(height: 8),
-              _MacroRow(
-                  label: 'Carbs',
-                  value: _carbs,
-                  color: AppColors.carbBar),
-              const SizedBox(height: 8),
-              _MacroRow(
-                  label: 'Fat',
-                  value: _fat,
-                  color: AppColors.fatBar),
-              if (_fibre > 0) ...[
-                const SizedBox(height: 8),
-                _MacroRow(
-                    label: 'Fibre',
-                    value: _fibre,
-                    color: const Color(0xFFB39DDB)),
-              ],
-
-              const SizedBox(height: 16),
+              // ── Nutrition table (per 100g vs per serving) ──────────────
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    // Header row
+                    Row(
+                      children: [
+                        const Expanded(child: SizedBox()),
+                        SizedBox(
+                          width: 80,
+                          child: Text('Per 100g',
+                              style: AppTextStyles.caption.copyWith(
+                                  fontWeight: FontWeight.w600),
+                              textAlign: TextAlign.center),
+                        ),
+                        SizedBox(
+                          width: 80,
+                          child: Text('You get',
+                              style: AppTextStyles.caption.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryAccent),
+                              textAlign: TextAlign.center),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Divider(color: AppColors.divider, height: 1),
+                    const SizedBox(height: 8),
+                    _NutrientRow('Calories',
+                        widget.food.caloriesPer100g, _calories,
+                        unit: 'kcal',
+                        color: AppColors.primaryAccent),
+                    _NutrientRow('Protein',
+                        widget.food.proteinPer100g, _protein,
+                        color: AppColors.proteinBar),
+                    _NutrientRow('Carbs',
+                        widget.food.carbsPer100g, _carbs,
+                        color: AppColors.carbBar),
+                    _NutrientRow('Fat',
+                        widget.food.fatPer100g, _fat,
+                        color: AppColors.fatBar),
+                    if (widget.food.fibrePer100g > 0)
+                      _NutrientRow('Fibre',
+                          widget.food.fibrePer100g, _fibre,
+                          color: const Color(0xFFB39DDB)),
+                  ],
+                ),
+              ),
 
               // Accuracy disclaimer
               Text(
@@ -383,36 +441,63 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
   }
 }
 
-class _MacroRow extends StatelessWidget {
+class _NutrientRow extends StatelessWidget {
   final String label;
-  final double value;
+  final double per100;
+  final double forServing;
   final Color color;
+  final String unit;
 
-  const _MacroRow(
-      {required this.label, required this.value, required this.color});
+  const _NutrientRow(
+    this.label,
+    this.per100,
+    this.forServing, {
+    this.color = const Color(0xFF9E9E9E),
+    this.unit = 'g',
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 56,
-          child: Text(label, style: AppTextStyles.caption),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: (value / 100).clamp(0.0, 1.0),
-              minHeight: 5,
-              backgroundColor: AppColors.divider,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(label, style: AppTextStyles.caption),
+              ],
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Text('${value.round()}g', style: AppTextStyles.caption),
-      ],
+          SizedBox(
+            width: 80,
+            child: Text(
+              '${per100.round()} $unit',
+              style: AppTextStyles.caption,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(
+            width: 80,
+            child: Text(
+              '${forServing.round()} $unit',
+              style: AppTextStyles.caption.copyWith(
+                  color: AppColors.primaryAccent,
+                  fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

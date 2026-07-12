@@ -12,21 +12,29 @@ class DietPlannerService {
 
   final _client = Supabase.instance.client;
 
+  /// Set as a side-effect of [loadTodaysPlan] when a cached plan is found.
+  /// Null if no plan was loaded or after a fresh generation.
+  DateTime? lastLoadedAt;
+
   // ---------------------------------------------------------------------------
   // Meal plan caching
   // ---------------------------------------------------------------------------
 
   /// Loads today's saved meal plan for [userId], or null if none exists.
+  /// Also sets [lastLoadedAt] to the row's created_at timestamp when found.
   Future<MealPlanResult?> loadTodaysPlan(String userId) async {
     try {
       final today = _today();
       final data = await _client
           .from('meal_plans')
-          .select('plan_data')
+          .select('plan_data, created_at')
           .eq('user_id', userId)
           .eq('date', today)
           .maybeSingle();
       if (data == null) return null;
+      // Parse and store the timestamp
+      final createdAtStr = data['created_at'] as String?;
+      lastLoadedAt = createdAtStr != null ? DateTime.tryParse(createdAtStr) : null;
       final planData = data['plan_data'];
       if (planData == null) return null;
       final json = planData is String

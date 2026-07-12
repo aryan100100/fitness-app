@@ -60,6 +60,10 @@ class UserModel {
   final int progressPhotosComparisonStreak;
   final String? lastComparisonDate;
 
+  // ZCTM additions
+  final String trackingMode;    // 'full' | 'zero'
+  final String? lastWaistPrompt; // yyyy-MM-dd — throttle waist log prompt
+
   const UserModel({
     this.id,
     required this.name,
@@ -107,6 +111,8 @@ class UserModel {
     this.lastProgressPhotoReminder,
     this.progressPhotosComparisonStreak = 0,
     this.lastComparisonDate,
+    this.trackingMode = 'full',
+    this.lastWaistPrompt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -159,6 +165,8 @@ class UserModel {
       lastProgressPhotoReminder: json['last_progress_photo_reminder'] as String?,
       progressPhotosComparisonStreak: (json['progress_photos_comparison_streak'] as num?)?.toInt() ?? 0,
       lastComparisonDate: json['last_comparison_date'] as String?,
+      trackingMode: json['tracking_mode'] as String? ?? 'full',
+      lastWaistPrompt: json['last_waist_prompt'] as String?,
     );
   }
 
@@ -209,6 +217,8 @@ class UserModel {
       if (lastProgressPhotoReminder != null) 'last_progress_photo_reminder': lastProgressPhotoReminder,
       'progress_photos_comparison_streak': progressPhotosComparisonStreak,
       if (lastComparisonDate != null) 'last_comparison_date': lastComparisonDate,
+      'tracking_mode': trackingMode,
+      if (lastWaistPrompt != null) 'last_waist_prompt': lastWaistPrompt,
     };
   }
 
@@ -258,6 +268,8 @@ class UserModel {
     String? lastProgressPhotoReminder,
     int? progressPhotosComparisonStreak,
     String? lastComparisonDate,
+    String? trackingMode,
+    String? lastWaistPrompt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -305,6 +317,8 @@ class UserModel {
       lastProgressPhotoReminder: lastProgressPhotoReminder ?? this.lastProgressPhotoReminder,
       progressPhotosComparisonStreak: progressPhotosComparisonStreak ?? this.progressPhotosComparisonStreak,
       lastComparisonDate: lastComparisonDate ?? this.lastComparisonDate,
+      trackingMode: trackingMode ?? this.trackingMode,
+      lastWaistPrompt: lastWaistPrompt ?? this.lastWaistPrompt,
     );
   }
 }
