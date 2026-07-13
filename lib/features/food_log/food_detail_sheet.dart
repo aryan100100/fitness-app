@@ -1,6 +1,7 @@
 // [HEALTH APP] — Food Detail Sheet
-// Bottom sheet: quantity/unit selector, real-time macro recalculation,
-// portion hint, sanity check, accuracy disclaimer, Add button.
+// Bottom sheet: meal type chip selector (with smart time-based default),
+// quantity/unit selector, real-time macro recalculation, per-100g vs per-serving
+// table, portion hint, sanity check, accuracy disclaimer, Add button.
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,17 +13,38 @@ import '../../core/services/streak_service.dart';
 import '../../models/food_search_result.dart';
 import '../../models/user_model.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Smart time → meal heuristic (matches nav_shell.dart and dashboard)
+// ─────────────────────────────────────────────────────────────────────────────
+String _smartMealType() {
+  final hour = DateTime.now().hour;
+  if (hour >= 5  && hour < 11) return 'breakfast';
+  if (hour >= 11 && hour < 15) return 'lunch';
+  if (hour >= 15 && hour < 18) return 'snacks';
+  if (hour >= 18 && hour < 23) return 'dinner';
+  return 'snacks';
+}
+
+String _mealLabel(String mealType) => switch (mealType) {
+  'breakfast' => 'Breakfast',
+  'lunch'     => 'Lunch',
+  'dinner'    => 'Dinner',
+  _           => 'Snacks',
+};
+
 class FoodDetailSheet extends StatefulWidget {
   final FoodSearchResult food;
-  final String mealType;
-  final String mealLabel;
+  /// Explicit meal type from navigation. If null, falls back to time-based smart default.
+  final String? mealType;
+  /// Deprecated convenience alias — kept for call-site compatibility.
+  final String? mealLabel;
   final UserModel user;
 
   const FoodDetailSheet({
     super.key,
     required this.food,
-    required this.mealType,
-    required this.mealLabel,
+    this.mealType,
+    this.mealLabel,
     required this.user,
   });
 
@@ -36,6 +58,9 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
   double _grams = 100;
   bool _isSaving = false;
 
+  /// The currently selected meal type — driven by chip selector.
+  late String _selectedMealType;
+
   // Unit → grams multiplier (approximate)
   static const Map<String, double> _unitToGrams = {
     'g':     1.0,
@@ -43,15 +68,19 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
     'cup':   240.0,
     'tbsp':  15.0,
     'tsp':   5.0,
-    'piece': 100.0,  // overridden by servingSizeG
+    'piece': 100.0,
     'slice': 30.0,
     'bowl':  300.0,
   };
 
+  static const _mealTypes = ['breakfast', 'lunch', 'snacks', 'dinner'];
+
   @override
   void initState() {
     super.initState();
-    // Default to food's natural serving size
+    // Explicit meal type from navigation overrides the time-based guess
+    _selectedMealType = widget.mealType ?? _smartMealType();
+
     final defaultQty = widget.food.servingSizeG;
     _grams = defaultQty;
     _qtyController.text = defaultQty == defaultQty.roundToDouble()
@@ -114,8 +143,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text('Log it',
-                  style: AppTextStyles.captionAccent),
+              child: Text('Log it', style: AppTextStyles.captionAccent),
             ),
           ],
         ),
@@ -133,7 +161,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
       await Supabase.instance.client.from('food_logs').insert({
         'user_id':          userId,
         'date':             dateStr,
-        'meal_type':        widget.mealType,
+        'meal_type':        _selectedMealType,
         'food_name':        widget.food.foodName,
         'quantity_g':       _grams,
         'calories':         _calories,
@@ -169,17 +197,15 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final portionHint =
-        PortionReferences.get(widget.food.foodName);
-    final isIndian =
-        widget.food.source == FoodSource.indianLocal;
+    final portionHint = PortionReferences.get(widget.food.foodName);
+    final isIndian = widget.food.source == FoodSource.indianLocal;
 
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: DraggableScrollableSheet(
-        initialChildSize: 0.75,
+        initialChildSize: 0.82,
         minChildSize: 0.5,
         maxChildSize: 0.95,
         expand: false,
@@ -189,11 +215,10 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
+              // ── Handle ───────────────────────────────────────────────────
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
+                  width: 40, height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.divider,
                     borderRadius: BorderRadius.circular(2),
@@ -202,44 +227,61 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
               ),
               const SizedBox(height: 20),
 
-              // Food name
-              Text(widget.food.foodName,
-                  style: AppTextStyles.headingMedium),
-              const SizedBox(height: 12),
-
-              // ── Meal context banner ──────────────────────────────────────
+              // ── Meal type chip selector ───────────────────────────────────
+              Text('Adding to:', style: AppTextStyles.caption),
+              const SizedBox(height: 8),
               Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryAccent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: AppColors.primaryAccent.withValues(alpha: 0.4)),
+                children: _mealTypes.map((type) {
+                  final isSelected = _selectedMealType == type;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedMealType = type),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryAccent
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primaryAccent
+                                  : AppColors.divider,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _mealLabel(type),
+                              style: AppTextStyles.caption.copyWith(
+                                color: isSelected
+                                    ? Colors.black
+                                    : AppColors.secondaryText,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.restaurant_outlined,
-                            size: 13, color: AppColors.primaryAccent),
-                        const SizedBox(width: 5),
-                        Text('Adding to: ${widget.mealLabel}',
-                            style: AppTextStyles.caption.copyWith(
-                                color: AppColors.primaryAccent,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
 
-              // Source badge
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
+
+              // ── Food name ─────────────────────────────────────────────────
+              Text(widget.food.foodName, style: AppTextStyles.headingMedium),
+              const SizedBox(height: 6),
+
+              // ── Source badge ──────────────────────────────────────────────
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.divider,
                   borderRadius: BorderRadius.circular(6),
@@ -248,7 +290,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                     style: AppTextStyles.caption.copyWith(fontSize: 10)),
               ),
 
-              // Indian note
+              // ── Indian home-cooking note ──────────────────────────────────
               if (isIndian) ...[
                 const SizedBox(height: 8),
                 Container(
@@ -261,22 +303,20 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                   ),
                   child: Text(
                     'Home cooking varies. Adjust for oil used and portion size.',
-                    style: AppTextStyles.caption
-                        .copyWith(color: AppColors.warning),
+                    style: AppTextStyles.caption.copyWith(color: AppColors.warning),
                   ),
                 ),
               ],
 
               const SizedBox(height: 20),
 
-              // Quantity + unit row
+              // ── Quantity + unit row ───────────────────────────────────────
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _qtyController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       style: AppTextStyles.body,
                       decoration: InputDecoration(
                         labelText: 'Quantity',
@@ -292,8 +332,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                   ),
                   const SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.cardSurface,
                       borderRadius: BorderRadius.circular(12),
@@ -303,12 +342,10 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                         value: _unit,
                         dropdownColor: AppColors.elevatedCard,
                         style: AppTextStyles.body,
-                        items: ['g', 'oz', 'cup', 'tbsp', 'tsp',
-                            'piece', 'slice', 'bowl']
+                        items: ['g', 'oz', 'cup', 'tbsp', 'tsp', 'piece', 'slice', 'bowl']
                             .map((u) => DropdownMenuItem(
                                 value: u,
-                                child: Text(u,
-                                    style: AppTextStyles.body)))
+                                child: Text(u, style: AppTextStyles.body)))
                             .toList(),
                         onChanged: _onUnitChanged,
                       ),
@@ -317,16 +354,15 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                 ],
               ),
 
-              // Portion hint
+              // ── Portion hint ──────────────────────────────────────────────
               if (portionHint != null) ...[
                 const SizedBox(height: 8),
-                Text('💡 $portionHint',
-                    style: AppTextStyles.caption),
+                Text('💡 $portionHint', style: AppTextStyles.caption),
               ],
 
               const SizedBox(height: 24),
 
-              // Calories big number
+              // ── Calories big number ───────────────────────────────────────
               Center(
                 child: Column(
                   children: [
@@ -342,7 +378,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
 
               const SizedBox(height: 20),
 
-              // ── Nutrition table (per 100g vs per serving) ──────────────
+              // ── Nutrition table: per 100g vs you get ─────────────────────
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -351,7 +387,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                 ),
                 child: Column(
                   children: [
-                    // Header row
+                    // Header
                     Row(
                       children: [
                         const Expanded(child: SizedBox()),
@@ -377,8 +413,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                     const SizedBox(height: 8),
                     _NutrientRow('Calories',
                         widget.food.caloriesPer100g, _calories,
-                        unit: 'kcal',
-                        color: AppColors.primaryAccent),
+                        unit: 'kcal', color: AppColors.primaryAccent),
                     _NutrientRow('Protein',
                         widget.food.proteinPer100g, _protein,
                         color: AppColors.proteinBar),
@@ -396,7 +431,9 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                 ),
               ),
 
-              // Accuracy disclaimer
+              const SizedBox(height: 16),
+
+              // ── Accuracy disclaimer ───────────────────────────────────────
               Text(
                 '⚠️ Nutritional values are estimates. Actual content may vary by preparation, brand, or portion.',
                 style: AppTextStyles.caption.copyWith(fontSize: 11),
@@ -405,7 +442,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
 
               const SizedBox(height: 24),
 
-              // Add button
+              // ── Add button (label updates live with chip selection) ───────
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -418,14 +455,12 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
                   ),
                   child: _isSaving
                       ? const SizedBox(
-                          width: 22,
-                          height: 22,
+                          width: 22, height: 22,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black),
+                              strokeWidth: 2, color: Colors.black),
                         )
                       : Text(
-                          'Add to ${widget.mealLabel}',
+                          'Add to ${_mealLabel(_selectedMealType)}',
                           style: AppTextStyles.buttonLabel.copyWith(
                               color: Colors.black),
                         ),
@@ -441,6 +476,9 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Nutrient row — per 100g | per serving side-by-side
+// ─────────────────────────────────────────────────────────────────────────────
 class _NutrientRow extends StatelessWidget {
   final String label;
   final double per100;
@@ -466,8 +504,7 @@ class _NutrientRow extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 3,
-                  height: 14,
+                  width: 3, height: 14,
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(2),

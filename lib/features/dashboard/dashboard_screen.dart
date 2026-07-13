@@ -34,6 +34,7 @@ import 'widgets/meal_section.dart';
 import 'widgets/tdee_confidence_card.dart';
 import 'widgets/weekly_recalc_card.dart';
 import 'widgets/weekly_summary_bar.dart';
+import '../food_log/food_log_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UserModel user;
@@ -482,11 +483,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.of(context)
         .push(
       MaterialPageRoute(
-        builder: (_) => ChangeNotifierProvider.value(
-          value: provider,
-          child: _FoodLogPlaceholder(
-              mealType: mealType, user: widget.user),
-        ),
+        builder: (_) => FoodLogScreen(
+            mealType: mealType, user: widget.user),
       ),
     )
         .then((_) {
@@ -863,40 +861,6 @@ class _ShimmerSkeleton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Temporary food log placeholder — replaced in Phase 3
-// ---------------------------------------------------------------------------
-class _FoodLogPlaceholder extends StatelessWidget {
-  final String mealType;
-  final UserModel user;
-  const _FoodLogPlaceholder(
-      {required this.mealType, required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (mealType) {
-      'breakfast' => 'Breakfast',
-      'lunch'     => 'Lunch',
-      'dinner'    => 'Dinner',
-      _           => 'Snacks',
-    };
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: Text('Log $label', style: AppTextStyles.body),
-        leading: const BackButton(color: AppColors.primaryText),
-      ),
-      body: Center(
-        child: Text(
-          'Food Log — coming next in Phase 3',
-          style: AppTextStyles.bodySecondary,
-        ),
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Low Motivation Button

@@ -60,13 +60,15 @@ class _BottomNavShellState extends State<BottomNavShell> {
     setState(() => _currentIndex = index);
   }
 
-  /// Choose the meal type heuristic based on time of day
+  /// Returns smart meal type based on current time of day.
+  /// Matches the time ranges in FoodDetailSheet.
   String _getMealType() {
     final hour = DateTime.now().hour;
-    if (hour < 11) return 'breakfast';
-    if (hour < 15) return 'lunch';
-    if (hour < 20) return 'dinner';
-    return 'snack';
+    if (hour >= 5  && hour < 11) return 'breakfast';
+    if (hour >= 11 && hour < 15) return 'lunch';
+    if (hour >= 15 && hour < 18) return 'snacks';
+    if (hour >= 18 && hour < 23) return 'dinner';
+    return 'snacks';
   }
 
   @override
